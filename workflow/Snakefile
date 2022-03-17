@@ -1,3 +1,5 @@
+import os
+
 config= "config/config.yaml"
 
 output_dir = config["output"]
@@ -18,12 +20,18 @@ rule ml_R:
     shell:
         "ml R/4.1.0-foss-2020b"
 
-# ---- Renv Rules ---- 
+# ---- Data Download Rule ---- #
+
+rule dl_hg38:
+    shell:
+        "wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
+        
+# ---- renv Rules ---- #
 rule install_renv:
     input:
         script = config["scripts"] + "install_renv.R"    
     shell:
-        "Rscript {input.script}
+        "Rscript {input.script}"
 
 rule renv_init_restore:
     run:
@@ -31,6 +39,7 @@ rule renv_init_restore:
         shell(R -e 'renv::restore()')
 
 # ---- Preparation Rules ---- #
+
 rule resize_peaks:
     input:
         atac = config["atac"]
@@ -61,11 +70,11 @@ rule fimo:
     output:
         fimo_dir = directory(expand("{dirname}/fimo_result/", dirname=output_dir))
     shell:
-        fimo  -oc {output.fimo_dir} {input.meme} {input.seqs}
+        "fimo -oc {output.fimo_dir} {input.meme} {input.seqs}"
 
 rule peak_tf:
     input:
-        fimo_dir = "results/fimo_result"
+        fimo_dir = expand("{dirname}/fimo_result/", dirname=output_dir)
         atac = config["atac"]
         peaks = expand("{dirname}/peaks.bed", dirname=output_dir)
         script = config["scripts"] + "peak_tf.py"
@@ -79,11 +88,14 @@ rule gp_corr:
         atac = config["atac"]
         rna = config["rna"]
         script = config["scripts"] + "gp_corrs.py"
+    params:
+        gtf_file = expand("data/{genome}.gtf", genome=config["genome"])
+        n_jobs = config["n_jobs"]
     output:
         gp_dir = directory(expand("{dirname}/gp_corrs/", dirname=output_dir))
     run:
         shell("mkdir -p {output.gp_dir}")
-        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir") 
+        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir --n_jobs={params.n_jobs} --gtf_file=params.gtf_file") 
         
 rule gene_x_tf:
     input:
@@ -91,11 +103,22 @@ rule gene_x_tf:
         rna = config["rna"]
         peak_tf = expand("{dirname}/peak_x_tf.h5ad", dirname=output_dir)
         gp_dir = expand("{dirname}/gp_corrs/", dirname=output_dir)
+        
         script = config["scripts"] + "compute_gene_tf.py"
+    params:
+        min_corr = config["min_corr"]
+        max_pval = config["max_pval"]
+        min_peaks = config["min_peaks"]
+    log:
+        out = config["logs"] + "gtf.out"
     output:
-        directory(expand("{dirname}/gp_corrs/", dirname=output_dir)
+        directory(expand("{dirname}/gtf_mats/", dirname=output_dir)
     shell:
-        "python {input.script}"
+        """
+        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \
+            --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \
+            --min_peaks={params.min_peaks} -o=output_dir -2>log.out"
+        """
 
 # ---- Cleaning Rule ---- #
 rule clean:

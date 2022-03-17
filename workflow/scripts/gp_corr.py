@@ -30,6 +30,22 @@ if __name__ == "__main__":
         default="results/gp_corrs/",
         metavar="directory"
     )
+    
+    parser.add_argument(
+        "--gtf_file",
+        type=int,
+        help="Number of jobs for computing GP correlations",
+        default="data/hg38.gtf",
+        metavar="directory"
+    )
+    
+     parser.add_argument(
+        "--n_jobs",
+        type=int,
+        help="Number of jobs for computing GP correlations",
+        default=1,
+        metavar="int"
+    )
     args = parser.parse_args()
 
 import pandas as pd
@@ -45,9 +61,10 @@ def main(args):
     
     gene_set = rna_ad.var_names
     
+    # Compute Gene-Peak Correlation scores
     gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_int_ad, rna_int_ad,
-                                                              path_to_gtf='../data/hg38.gtf',
-                                                              span=100000, n_jobs=1,
+                                                              path_to_gtf=args.gtf_file,
+                                                              span=100000, n_jobs=n_jobs,
                                                               gene_set=gene_set)
     
     peak_counts = SEACells.genescores.get_peak_counts(gp_corrs)
