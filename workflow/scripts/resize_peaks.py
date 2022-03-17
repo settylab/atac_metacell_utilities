@@ -36,6 +36,8 @@ import pyranges as pr
 import pandas as pd
 import scanpy as sc
 
+# If we make the `_pyranges_from_strings()` function in SEACells public, I can
+#     I can use that instead of defining this function!
 def pyranges_from_strings(pos_list):
     # Chromosome and positions
     chrom = pos_list.str.split(':').str.get(0)

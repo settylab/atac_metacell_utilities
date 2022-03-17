@@ -11,7 +11,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC AnnData.",
+        help="Path to ATAC MC AnnData, common obs with RNA"
     )
     
     parser.add_argument(

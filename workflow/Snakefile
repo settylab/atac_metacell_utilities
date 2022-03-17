@@ -1,24 +1,34 @@
 config= "config/config.yaml"
 
+output_dir = config["output"]
+
 # ---- Main Rule ---- #
 rule all:
     input:
         gene_peak = "gp_corr.pickle"
         peak_tf = "peak_tf.h5ad"
-        gene_tf_sum = "gtf_sum.csv"
-        gene_tf_fimo = "gtf_fimo.csv"
-        gene_tf_wt_avg = "gtf_wt_avg.csv"
+        gene_tf_dir = expand("{dirname}/gene_xtf/", dirname=output_dir)
 
-
-# ---- Renv Rules ---- #
-rule install_renv:    
+# ---- ml Rules ---- #
+rule ml_conda:
     shell:
-        Rscript config["scripts"] + "install_renv.R"
+        "module load Anaconda3/2020.02"
+
+rule ml_R:
+    shell:
+        "ml R/4.1.0-foss-2020b"
+
+# ---- Renv Rules ---- 
+rule install_renv:
+    input:
+        script = config["scripts"] + "install_renv.R"    
+    shell:
+        "Rscript {input.script}
 
 rule renv_init_restore:
-    shell:
-        "R -e 'renv::init()'"
-        "R -e 'renv::restore()'"
+    run:
+        shell(R -e 'renv::init(bare=TRUE)')
+        shell(R -e 'renv::restore()')
 
 # ---- Preparation Rules ---- #
 rule resize_peaks:
@@ -28,46 +38,66 @@ rule resize_peaks:
     params:
         width = config["width"]
     output:
-        "results/peaks.bed"
+        expand("{dirname}/peaks.bed", dirname=output_dir)
     shell:
-        "python {input.script} {input.atac} --outdir=config["output"] --width{=params.width}  -o=config["output"]
+        "python {input.script} {input.atac} --outdir=output_dir --width{=params.width}"
     
 rule all_seqs:
     input:
-        peaks = config["output"] + "peaks.bed"
+        peaks = expand("{dirname}/peaks.bed", dirname=output_dir)
         script = config["scripts"] + "seq_gl.R"
     params:
         span = config["width"]
         genome = config["genome"]
     output:
-        outfile = "all_seqs.fa"
+        outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
         "Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}"
 
 rule fimo:
     input:
         meme = config["in_meme"]
-        seqs = "all_seqs.fa"
-    params:
-        outputdir = "results/fimo_result"
+        seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
-        directory("results/fimo_result")
+        fimo_dir = directory(expand("{dirname}/fimo_result/", dirname=output_dir))
     shell:
-        fimo  -oc {params.outputdir} {input.meme} {input.seqs}
+        fimo  -oc {output.fimo_dir} {input.meme} {input.seqs}
 
 rule peak_tf:
     input:
         fimo_dir = "results/fimo_result"
         atac = config["atac"]
-        peaks = config["output"] + "peaks.bed"
+        peaks = expand("{dirname}/peaks.bed", dirname=output_dir)
         script = config["scripts"] + "peak_tf.py"
     output:
-        "results/peak_x_tf.h5ad" 
+        expand("{dirname}/peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} {input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=config["output"]
+        "python {input.script} {input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=output_dir"
 
+rule gp_corr:
+    input:
+        atac = config["atac"]
+        rna = config["rna"]
+        script = config["scripts"] + "gp_corrs.py"
+    output:
+        gp_dir = directory(expand("{dirname}/gp_corrs/", dirname=output_dir))
+    run:
+        shell("mkdir -p {output.gp_dir}")
+        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir") 
+        
+rule gene_x_tf:
+    input:
+        atac = config["atac"]
+        rna = config["rna"]
+        peak_tf = expand("{dirname}/peak_x_tf.h5ad", dirname=output_dir)
+        gp_dir = expand("{dirname}/gp_corrs/", dirname=output_dir)
+        script = config["scripts"] + "compute_gene_tf.py"
+    output:
+        directory(expand("{dirname}/gp_corrs/", dirname=output_dir)
+    shell:
+        "python {input.script}"
 
 # ---- Cleaning Rule ---- #
 rule clean:
     shell:
-        "rm -rf config["output"]/*"
+        "rm -rf config['output']/*"
