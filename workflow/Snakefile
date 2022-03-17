@@ -1,6 +1,6 @@
+config= "config/config.yaml"
 
-
-
+# ---- Main Rule ---- #
 rule all:
     input:
         gene_peak = "gp_corr.pickle"
@@ -8,7 +8,19 @@ rule all:
         gene_tf_sum = "gtf_sum.csv"
         gene_tf_fimo = "gtf_fimo.csv"
         gene_tf_wt_avg = "gtf_wt_avg.csv"
-    
+
+
+# ---- Renv Rules ---- #
+rule install_renv:    
+    shell:
+        Rscript config["scripts"] + "install_renv.R"
+
+rule renv_init_restore:
+    shell:
+        "R -e 'renv::init()'"
+        "R -e 'renv::restore()'"
+
+# ---- Preparation Rules ---- #
 rule resize_peaks:
     input:
         atac = config["atac"]
@@ -18,11 +30,11 @@ rule resize_peaks:
     output:
         "results/peaks.bed"
     shell:
-        "python {input.script} {input.atac} --outdir=config["output"] --width{=params.width} 
+        "python {input.script} {input.atac} --outdir=config["output"] --width{=params.width}  -o=config["output"]
     
 rule all_seqs:
     input:
-        peaks = config["results"] + "peaks.bed"
+        peaks = config["output"] + "peaks.bed"
         script = config["scripts"] + "seq_gl.R"
     params:
         span = config["width"]
@@ -41,10 +53,21 @@ rule fimo:
     output:
         directory("results/fimo_result")
     shell:
-        fimo  -oc params.outputdir input.meme input.seqs
+        fimo  -oc {params.outputdir} {input.meme} {input.seqs}
 
-rule 
+rule peak_tf:
+    input:
+        fimo_dir = "results/fimo_result"
+        atac = config["atac"]
+        peaks = config["output"] + "peaks.bed"
+        script = config["scripts"] + "peak_tf.py"
+    output:
+        "results/peak_x_tf.h5ad" 
+    shell:
+        "python {input.script} {input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=config["output"]
 
+
+# ---- Cleaning Rule ---- #
 rule clean:
     shell:
-        "rm -rf out/*"
+        "rm -rf config["output"]/*"
