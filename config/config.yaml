@@ -1,6 +1,7 @@
 scripts: "workflow/scripts/"
 output: "results/"
 logs: "logs/"
+renv_loc: ""
 
 atac: ""
 rna: ""

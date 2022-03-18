@@ -11,15 +11,6 @@ rule all:
         peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir)
 
-# ---- ml Rules ---- #
-rule ml_conda:
-    shell:
-        "module load Anaconda3/2020.02"
-
-rule ml_R:
-    shell:
-        "ml R/4.1.0-foss-2020b"
-
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -27,12 +18,14 @@ rule dl_hg38:
         "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
         
 # ---- renv Rules ---- #
-rule install_renv:
+rule renv_install:
     input:
-        script = config["scripts"] + "install_renv.R"    
+        libloc = config['renv_loc']
     shell:
-        "Rscript {input.script}"
-
+        """
+        ml R/4.1.0-foss-2020b
+        Rscript workflow/scripts/install_renv.R {input.libloc}
+        """
 rule renv_init_restore:
     run:
         shell("R -e 'renv::init(bare=TRUE)'"),
