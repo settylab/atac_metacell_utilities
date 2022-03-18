@@ -20,11 +20,11 @@ rule ml_R:
     shell:
         "ml R/4.1.0-foss-2020b"
 
-# ---- Data Download Rule ---- #
+# ---- Genome Download Rule ---- #
 
 rule dl_hg38:
     shell:
-        "wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
+        "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
         
 # ---- renv Rules ---- #
 rule install_renv:
