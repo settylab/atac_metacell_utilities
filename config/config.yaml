@@ -1,1 +1,16 @@
 scripts: "scripts/"
+output: "results/"
+logs: "logs/"
+
+
+atac: ""
+rna: ""
+in_meme: ""
+
+width: 150
+genome: "hg38"
+n_jobs: ""
+
+min_corr: 0.0
+min_pval: 0.1
+min_peaks: 2
