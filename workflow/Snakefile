@@ -36,7 +36,7 @@ rule install_renv:
 rule renv_init_restore:
     run:
         shell(R -e 'renv::init(bare=TRUE)')
-        shell(R -e 'renv::restore()')
+        shell(R -e 'renv::restore(lockfile="envs/renv.lock")')
 
 # ---- Preparation Rules ---- #
 

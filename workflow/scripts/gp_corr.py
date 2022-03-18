@@ -46,10 +46,17 @@ if __name__ == "__main__":
         default=1,
         metavar="int"
     )
+
+    parser.add_argument(
+        "--transcript_span",
+        type=int
+        help="num of base pairs to add on longest transcript"
+        default=100000
+        metavar="int"
+    )
+
     args = parser.parse_args()
 
-import pandas as pd
-import numpy as np
 import scanpy as sc
 import SEACells
 import pickle
@@ -64,7 +71,7 @@ def main(args):
     # Compute Gene-Peak Correlation scores
     gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_int_ad, rna_int_ad,
                                                               path_to_gtf=args.gtf_file,
-                                                              span=100000, n_jobs=n_jobs,
+                                                              span=args.transcript_span, n_jobs=args.n_jobs,
                                                               gene_set=gene_set)
     
     peak_counts = SEACells.genescores.get_peak_counts(gp_corrs)
