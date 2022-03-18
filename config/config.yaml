@@ -1,16 +1,15 @@
-scripts: "scripts/"
+scripts: "workflow/scripts/"
 output: "results/"
 logs: "logs/"
 
-
 atac: ""
 rna: ""
-in_meme: ""
+in_meme: "/fh/fast/setty_m/grp/motif_databases/CIS-BP_2.00/Homo_sapiens.meme"
 
 width: 150
 genome: "hg38"
-n_jobs: ""
+n_jobs: "1"
 
 min_corr: 0.0
-min_pval: 0.1
+max_pval: 0.1
 min_peaks: 2

@@ -1,15 +1,15 @@
 import os
 
-config= "config/config.yaml"
+configfile: "config/config.yaml"
 
 output_dir = config["output"]
 
 # ---- Main Rule ---- #
 rule all:
     input:
-        gene_peak = "gp_corr.pickle"
-        peak_tf = "peak_tf.h5ad"
-        gene_tf_dir = expand("{dirname}/gene_xtf/", dirname=output_dir)
+        gene_peak = expand("{dirname}gp_corrs/", dirname=output_dir),
+        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir)
 
 # ---- ml Rules ---- #
 rule ml_conda:
@@ -35,28 +35,28 @@ rule install_renv:
 
 rule renv_init_restore:
     run:
-        shell(R -e 'renv::init(bare=TRUE)')
-        shell(R -e 'renv::restore(lockfile="envs/renv.lock")')
+        shell("R -e 'renv::init(bare=TRUE)'"),
+        shell("R -e 'renv::restore(lockfile=\"envs/renv.lock\")'")
 
 # ---- Preparation Rules ---- #
 
 rule resize_peaks:
     input:
-        atac = config["atac"]
+        atac = config["atac"],
         script = config["scripts"] + "resize_peaks.py"
     params:
         width = config["width"]
     output:
-        expand("{dirname}/peaks.bed", dirname=output_dir)
+        expand("{dirname}peaks.bed", dirname=output_dir)
     shell:
-        "python {input.script} {input.atac} --outdir=output_dir --width{=params.width}"
+        "python {input.script} {input.atac} --outdir=output_dir --width={params.width}"
     
 rule all_seqs:
     input:
-        peaks = expand("{dirname}/peaks.bed", dirname=output_dir)
+        peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "seq_gl.R"
     params:
-        span = config["width"]
+        span = config["width"],
         genome = config["genome"]
     output:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
@@ -65,54 +65,53 @@ rule all_seqs:
 
 rule fimo:
     input:
-        meme = config["in_meme"]
+        meme = config["in_meme"],
         seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
-        fimo_dir = directory(expand("{dirname}/fimo_result/", dirname=output_dir))
+        fimo_dir = directory(expand("{dirname}fimo_result/", dirname=output_dir))
     shell:
         "fimo -oc {output.fimo_dir} {input.meme} {input.seqs}"
 
 rule peak_tf:
     input:
-        fimo_dir = expand("{dirname}/fimo_result/", dirname=output_dir)
-        atac = config["atac"]
-        peaks = expand("{dirname}/peaks.bed", dirname=output_dir)
+        fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
+        atac = config["atac"],
+        peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
     output:
-        expand("{dirname}/peak_x_tf.h5ad", dirname=output_dir) 
+        expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
         "python {input.script} {input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=output_dir"
 
 rule gp_corr:
     input:
-        atac = config["atac"]
-        rna = config["rna"]
-        script = config["scripts"] + "gp_corrs.py"
+        atac = config["atac"],
+        rna = config["rna"],
+        script = config["scripts"] + "gp_corr.py"
     params:
-        gtf_file = expand("data/{genome}.gtf", genome=config["genome"])
+        gtf_file = expand("data/{genome}.gtf", genome=config["genome"]),
         n_jobs = config["n_jobs"]
     output:
-        gp_dir = directory(expand("{dirname}/gp_corrs/", dirname=output_dir))
+        gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     run:
         shell("mkdir -p {output.gp_dir}")
         shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir --n_jobs={params.n_jobs} --gtf_file=params.gtf_file") 
         
 rule gene_x_tf:
     input:
-        atac = config["atac"]
-        rna = config["rna"]
-        peak_tf = expand("{dirname}/peak_x_tf.h5ad", dirname=output_dir)
-        gp_dir = expand("{dirname}/gp_corrs/", dirname=output_dir)
-        
+        atac = config["atac"],
+        rna = config["rna"],
+        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
-        min_corr = config["min_corr"]
-        max_pval = config["max_pval"]
+        min_corr = config["min_corr"],
+        max_pval = config["max_pval"],
         min_peaks = config["min_peaks"]
     log:
         out = config["logs"] + "gtf.out"
     output:
-        directory(expand("{dirname}/gtf_mats/", dirname=output_dir)
+        directory(expand("{dirname}gtf_mats/", dirname=output_dir))
     shell:
         """
         python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \
