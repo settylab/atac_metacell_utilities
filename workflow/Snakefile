@@ -26,6 +26,7 @@ rule renv_install:
         ml R/4.1.0-foss-2020b
         Rscript workflow/scripts/install_renv.R {input.libloc}
         """
+
 rule renv_init_restore:
     shell:
         """
@@ -33,14 +34,7 @@ rule renv_init_restore:
         R -e 'renv::init(bare=TRUE)'
         R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
         """
-rule renv_genome:
-    params:
-        genome = config["genome"]
-    shell:
-        """
-        ml R/4.1.0-foss-2020b
-        Rscript workflow/scripts/install_bsgenome.R {params.genome}
-        """
+        
 # ---- Preparation Rules ---- #
 
 rule resize_peaks:
@@ -76,7 +70,10 @@ rule fimo:
     output:
         fimo_dir = directory(expand("{dirname}fimo_result/", dirname=output_dir))
     shell:
-        "fimo -oc {output.fimo_dir} {input.meme} {input.seqs}"
+        """
+        ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
+        fimo -oc {output.fimo_dir} {input.meme} {input.seqs}
+        """
 
 rule peak_tf:
     input:
@@ -87,7 +84,7 @@ rule peak_tf:
     output:
         expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} {input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=output_dir"
+        "python {input.script} --atac={input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
 
 rule gp_corr:
     input:
@@ -99,10 +96,11 @@ rule gp_corr:
         n_jobs = config["n_jobs"]
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
-    run:
-        shell("mkdir -p {output.gp_dir}")
-        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir --n_jobs={params.n_jobs} --gtf_file={input.gtf_file}") 
-        
+    shell:
+        """
+        mkdir -p {output.gp_dir}
+        python {input.script} --atac={input.atac} --rna={input.rna} -o={ouput.gp_dir} --n_jobs={params.n_jobs} --gtf_file={input.gtf_file}
+        """
 rule gene_x_tf:
     input:
         atac = config["atac"],
@@ -117,12 +115,13 @@ rule gene_x_tf:
     log:
         out = config["logs"] + "gtf.out"
     output:
-        directory(expand("{dirname}gtf_mats/", dirname=output_dir))
+        gtf_dir = directory(expand("{dirname}gtf_mats/", dirname=output_dir))
     shell:
         """
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \
-            --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \
-            --min_peaks={params.min_peaks} -o=output_dir -2>log.out"
+        mkdir -p {output.gtf_dir}
+        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \\
+            --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
+            --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
         """
 
 # ---- Cleaning Rule ---- #

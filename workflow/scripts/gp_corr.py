@@ -78,10 +78,10 @@ def main(args):
     
     # save files
     with open(args.outdir + 'gp_corr.pickle', 'wb') as handle:
-        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(gp_corrs, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     with open(args.outdir + 'peak_cts.pickle', 'wb') as handle:
-        pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(peak_counts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
 if __name__ == "__main__":

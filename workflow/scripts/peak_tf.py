@@ -7,7 +7,7 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "atac",
+        "--atac",
         metavar="AnnData",
         type=str,
         required=True,
@@ -44,6 +44,7 @@ from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
 import scanpy as sc
 import pandas as pd
+import numpy as np
 import subprocess
 
 def build_peak_tf(fimo_scores, peaks_df, atac_ad):
@@ -56,7 +57,7 @@ def build_peak_tf(fimo_scores, peaks_df, atac_ad):
     peak_index = pd.Series(range(len(peaks_df.name)), index=peaks_df.name)
 
     # Initialize Values
-    num_records = int(subprocess.run(['wc', '-l', fimo_res_path], stdout=subprocess.PIPE).stdout.decode().split(' ')[0]) - 5
+    num_records = int(subprocess.run(['wc', '-l', fimo_scores], stdout=subprocess.PIPE).stdout.decode().split(' ')[0]) - 5
     
     x = np.zeros(num_records)
     y = np.zeros(num_records)
@@ -98,7 +99,8 @@ def main(args):
     atac_ad = sc.read(args.atac)
 
     peaks_df = pd.read_csv(args.peak_file, sep='\t')
-    fimo_scores = args.fimo_res + 'fimo.tsv'
+    fimo_scores = args.fimo_res + '/fimo.tsv'
+    print(fimo_scores)
     
     # Build peak x TF AnnData
     pxtf_ad = build_peak_tf(fimo_scores, peaks_df, atac_ad)

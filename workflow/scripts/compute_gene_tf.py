@@ -167,18 +167,18 @@ def gene_tf_associations(gene_peak, peak_x_tf,
     return gene_tfs
 
 
-def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, ):
+def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     
-    # initiate three DFs
-    gtf_sum = pd.DataFrame(0.0,index=gene_peak.index,columns=tfs)
-    gtf_fimo, gtf_avg = gtf_sum.copy(), gtf_sum.copy()
-  
     # map names to indices
     peak_names = atac_ad.var_names
-    tfs = peak_x_tf.var_names
-    
     peak_idxses = dict(zip(peak_names, range(len(peak_names))))
+    
+    tfs = peak_x_tf.var_names
 
+    # initiate three DFs
+    gtf_sum = pd.DataFrame(0.0,index=gene_peak.index, columns=tfs)
+    gtf_fimo, gtf_avg = gtf_sum.copy(), gtf_sum.copy()
+  
     atac_expr = pd.DataFrame(atac_ad.X.todense(), index=atac_ad.obs_names, 
                              columns=atac_ad.var_names)
     
@@ -193,11 +193,11 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, ):
             # sum across cells for each peak
             sum_acc = atac_expr.iloc[:, peak_idx].sum().sum()
             avg_acc = atac_expr.iloc[:, peak_idx].sum().mean()
-            fimo_sc = fimo_scores.iloc[:, tf].sum()
+            fimo_sc = fimo_scores.loc[:, tf].sum()
             
             gtf_sum.loc[gene, tf] = sum_acc
             gtf_fimo.loc[gene, tf] = fimo_sc
-            gtf_avg.loc[gene, tf] = gtf_fimo.loc[gene,tf] * avg_acc.loc[gene_tf]
+            gtf_avg.loc[gene, tf] = gtf_fimo.loc[gene,tf] * avg_acc
     
     return gtf_sum, gtf_fimo, gtf_avg
             
@@ -207,19 +207,15 @@ def main(args):
     rna_ad = sc.read(args.rna)
     peak_x_tf = sc.read(args.peak_tf)
     
-    with open(args.gp_corr + "gp_corr.pickle", 'rb') as handle:
+    with open(args.gp_corr + "/gp_corr.pickle", 'rb') as handle:
         gene_peak = pickle.load(handle)
     
-    # subset peaks
-    atac_ad = atac_ad[:, int_atac.var_names].copy()
-    peak_x_tf = peak_x_tf[peak_x_tf.obs['unsized_peak'].isin(int_atac.var_names), :].copy()
-
     # normalize atac
     atac_ad = normalize_atac(atac_ad)
     
     # Filter genes for ones that have FIMO score
     gene_set = rna_ad.var_names
-    peak_x_tf = filter_gene(peak_x_tf, expr_genes)
+    peak_x_tf = filter_gene(peak_x_tf, gene_set)
 
     # Log genes with peaks
     count_genes_with_peaks(gene_set, gene_peak)
@@ -229,11 +225,11 @@ def main(args):
                                     max_pval=args.max_pval, min_peaks=args.min_peaks)
     
     # Compute gene x TF matrices
-    gtf_sum, gtf_fimo, gtf_avg = compute_gene_tf_mat()
+    gtf_sum, gtf_fimo, gtf_avg = compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs)
 
     
-    for mat in [('sum', gtf_sum), ('fimo', gtf_fimo), ('avg',gtf_avg)]:
-        write_pickle(args.outdir + mat[0], mat[1])
+    for mat in [('/sum', gtf_sum), ('/fimo', gtf_fimo), ('/avg',gtf_avg)]:
+        write_pickle(args.outdir + mat[0] + '.pickle', mat[1])
 
 if __name__ == "__main__":
     main(args)
