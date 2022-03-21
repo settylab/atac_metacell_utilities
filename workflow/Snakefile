@@ -93,15 +93,15 @@ rule gp_corr:
     input:
         atac = config["atac"],
         rna = config["rna"],
-        script = config["scripts"] + "gp_corr.py"
+        script = config["scripts"] + "gp_corr.py",
+        gtf_file = expand("data/{genome}.gtf", genome=config["genome"])
     params:
-        gtf_file = expand("data/{genome}.gtf", genome=config["genome"]),
         n_jobs = config["n_jobs"]
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     run:
         shell("mkdir -p {output.gp_dir}")
-        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir --n_jobs={params.n_jobs} --gtf_file=params.gtf_file") 
+        shell("python {input.script} --atac={input.atac} --rna={input.rna} -o=output.gp_dir --n_jobs={params.n_jobs} --gtf_file={input.gtf_file}") 
         
 rule gene_x_tf:
     input:

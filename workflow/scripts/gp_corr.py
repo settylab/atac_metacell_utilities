@@ -69,7 +69,7 @@ def main(args):
     gene_set = rna_ad.var_names
     
     # Compute Gene-Peak Correlation scores
-    gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_int_ad, rna_int_ad,
+    gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_ad, rna_ad,
                                                               path_to_gtf=args.gtf_file,
                                                               span=args.transcript_span, n_jobs=args.n_jobs,
                                                               gene_set=gene_set)
