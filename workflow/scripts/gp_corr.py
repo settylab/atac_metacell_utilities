@@ -33,13 +33,13 @@ if __name__ == "__main__":
     
     parser.add_argument(
         "--gtf_file",
-        type=int,
+        type=str,
         help="Number of jobs for computing GP correlations",
         default="data/hg38.gtf",
         metavar="directory"
     )
     
-     parser.add_argument(
+    parser.add_argument(
         "--n_jobs",
         type=int,
         help="Number of jobs for computing GP correlations",
@@ -49,9 +49,9 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--transcript_span",
-        type=int
-        help="num of base pairs to add on longest transcript"
-        default=100000
+        type=int,
+        help="num of base pairs to add on longest transcript",
+        default=100000,
         metavar="int"
     )
 

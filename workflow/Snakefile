@@ -27,10 +27,20 @@ rule renv_install:
         Rscript workflow/scripts/install_renv.R {input.libloc}
         """
 rule renv_init_restore:
-    run:
-        shell("R -e 'renv::init(bare=TRUE)'"),
-        shell("R -e 'renv::restore(lockfile=\"envs/renv.lock\")'")
-
+    shell:
+        """
+        ml R/4.1.0-foss-2020b
+        R -e 'renv::init(bare=TRUE)'
+        R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
+        """
+rule renv_genome:
+    params:
+        genome = config["genome"]
+    shell:
+        """
+        ml R/4.1.0-foss-2020b
+        Rscript workflow/scripts/install_bsgenome.R {params.genome}
+        """
 # ---- Preparation Rules ---- #
 
 rule resize_peaks:
@@ -38,11 +48,12 @@ rule resize_peaks:
         atac = config["atac"],
         script = config["scripts"] + "resize_peaks.py"
     params:
-        width = config["width"]
+        width = config["width"],
+        out_dir = output_dir
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
     shell:
-        "python {input.script} {input.atac} --outdir=output_dir --width={params.width}"
+        "python {input.script} {input.atac} --outdir={params.out_dir} --width={params.width}"
     
 rule all_seqs:
     input:
@@ -54,8 +65,10 @@ rule all_seqs:
     output:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
-        "Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}"
-
+        """
+        ml R/4.1.0-foss-2020b
+        Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
+        """
 rule fimo:
     input:
         meme = config["in_meme"],

@@ -7,7 +7,7 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "atac",
+        "--atac",
         metavar="AnnData",
         type=str,
         required=True,
@@ -35,7 +35,7 @@ if __name__ == "__main__":
 import pyranges as pr
 import pandas as pd
 import scanpy as sc
-
+import numpy as np
 # If we make the `_pyranges_from_strings()` function in SEACells public, I can
 #     I can use that instead of defining this function!
 def pyranges_from_strings(pos_list):
@@ -72,7 +72,7 @@ def make_peak_df(peaks_pr):
     # Names
     peaks_df['name'] = peaks_df['chrom'].astype(str) + ':' + peaks_df['chromStart'].astype(str) + '-' + peaks_df['chromEnd'].astype(str)
 
-    return peak_df
+    return peaks_df
 
 def main(args):
     # Load data
@@ -81,7 +81,6 @@ def main(args):
     peaks_pr = pyranges_from_strings(atac_ad.var_names)
     
     peaks_df = make_peak_df(peaks_pr)
-    
     peaks_df.to_csv(args.outdir + 'peaks.bed', sep='\t', index=None, header=True)
     
     
