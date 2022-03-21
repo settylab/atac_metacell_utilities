@@ -229,7 +229,7 @@ def main(args):
 
     
     for mat in [('/sum', gtf_sum), ('/fimo', gtf_fimo), ('/avg',gtf_avg)]:
-        write_pickle(args.outdir + mat[0] + '.pickle', mat[1])
+        mat[1].to_csv(args.outdir + mat[0] + '.csv')
 
 if __name__ == "__main__":
     main(args)

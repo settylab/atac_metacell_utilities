@@ -47,7 +47,7 @@ rule resize_peaks:
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
     shell:
-        "python {input.script} {input.atac} --outdir={params.out_dir} --width={params.width}"
+        "python {input.script} --atac={input.atac} --outdir={params.out_dir} --width={params.width}"
     
 rule all_seqs:
     input:
@@ -69,10 +69,12 @@ rule fimo:
         seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
         fimo_dir = directory(expand("{dirname}fimo_result/", dirname=output_dir))
+    log:
+        out = config["logs"] + "fimo.out"
     shell:
         """
         ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
-        fimo -oc {output.fimo_dir} {input.meme} {input.seqs}
+        fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
         """
 
 rule peak_tf:
@@ -93,13 +95,16 @@ rule gp_corr:
         script = config["scripts"] + "gp_corr.py",
         gtf_file = expand("data/{genome}.gtf", genome=config["genome"])
     params:
-        n_jobs = config["n_jobs"]
+        n_jobs = config["n_jobs"],
+        test_set = config["test_set"],
+        n_genes = config["n_genes"]
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.gp_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} -o={ouput.gp_dir} --n_jobs={params.n_jobs} --gtf_file={input.gtf_file}
+        python {input.script} --atac={input.atac} --rna={input.rna} -o={output.gp_dir} --n_jobs={params.n_jobs} \\
+            --gtf_file={input.gtf_file} {params.test_set} --n_genes={params.n_genes}
         """
 rule gene_x_tf:
     input:
@@ -126,5 +131,7 @@ rule gene_x_tf:
 
 # ---- Cleaning Rule ---- #
 rule clean:
+    params:
+        out_dir = output_dir + "*"
     shell:
-        "rm -rf config['output']/*"
+        "rm -rfi {params.out_dir}"

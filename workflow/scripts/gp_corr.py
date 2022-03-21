@@ -54,6 +54,20 @@ if __name__ == "__main__":
         default=100000,
         metavar="int"
     )
+    
+    parser.add_argument(
+        "--test_set",
+        help="Test on a subset of genes, n=--n_genes",
+        action="store_true"
+    )
+    
+    parser.add_argument(
+        "--n_genes",
+        type=int,
+        help="num of base pairs to add on longest transcript",
+        default=20,
+        metavar="int"
+    )
 
     args = parser.parse_args()
 
@@ -66,7 +80,10 @@ def main(args):
     atac_ad = sc.read(args.atac)
     rna_ad = sc.read(args.rna)
     
-    gene_set = rna_ad.var_names
+    if args.test_set:
+        gene_set = rna_ad.var_names[:args.n_genes]
+    else:
+        gene_set = rna_ad.var_names
     
     # Compute Gene-Peak Correlation scores
     gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_ad, rna_ad,
@@ -77,10 +94,10 @@ def main(args):
     peak_counts = SEACells.genescores.get_peak_counts(gp_corrs)
     
     # save files
-    with open(args.outdir + 'gp_corr.pickle', 'wb') as handle:
+    with open(args.outdir + '/gp_corr.pickle', 'wb') as handle:
         pickle.dump(gp_corrs, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-    with open(args.outdir + 'peak_cts.pickle', 'wb') as handle:
+    with open(args.outdir + '/peak_cts.pickle', 'wb') as handle:
         pickle.dump(peak_counts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     
