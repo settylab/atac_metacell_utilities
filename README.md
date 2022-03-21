@@ -9,3 +9,7 @@ Three versions of the `gene x TF` matrix are produced, each with a different pro
 * sum of gene accessibility from ATAC
 * sum of FIMO scores
 * average gene accessibility, weighted by FIMO scores
+
+## Visualization:
+
+![DAG of workflow](./dag.png)
