@@ -61,6 +61,51 @@
         "rtracklayer"
       ]
     },
+    "BSgenome.Hsapiens.UCSC.hg18": {
+      "Package": "BSgenome.Hsapiens.UCSC.hg18",
+      "Version": "1.3.1000",
+      "Source": "Bioconductor",
+      "Hash": "95a5ac8a829592d8a42b4856de6cc07d",
+      "Requirements": [
+        "BSgenome"
+      ]
+    },
+    "BSgenome.Hsapiens.UCSC.hg19": {
+      "Package": "BSgenome.Hsapiens.UCSC.hg19",
+      "Version": "1.4.3",
+      "Source": "Bioconductor",
+      "Hash": "3337834debc2b00ee3cebdaa22eafa97",
+      "Requirements": [
+        "BSgenome"
+      ]
+    },
+    "BSgenome.Hsapiens.UCSC.hg38": {
+      "Package": "BSgenome.Hsapiens.UCSC.hg38",
+      "Version": "1.4.4",
+      "Source": "Bioconductor",
+      "Hash": "78973689ee32d5b3885ee96577c50ab7",
+      "Requirements": [
+        "BSgenome"
+      ]
+    },
+    "BSgenome.Mmusculus.UCSC.mm10": {
+      "Package": "BSgenome.Mmusculus.UCSC.mm10",
+      "Version": "1.4.3",
+      "Source": "Bioconductor",
+      "Hash": "219e412d379146b5e2b1c7ec6cc92b8f",
+      "Requirements": [
+        "BSgenome"
+      ]
+    },
+    "BSgenome.Mmusculus.UCSC.mm9": {
+      "Package": "BSgenome.Mmusculus.UCSC.mm9",
+      "Version": "1.4.0",
+      "Source": "Bioconductor",
+      "Hash": "d0d95ee70ba3866c52373c28f42be034",
+      "Requirements": [
+        "BSgenome"
+      ]
+    },
     "Biobase": {
       "Package": "Biobase",
       "Version": "2.54.0",
