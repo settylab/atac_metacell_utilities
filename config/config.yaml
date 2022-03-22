@@ -9,7 +9,10 @@ in_meme: "/fh/fast/setty_m/grp/motif_databases/CIS-BP_2.00/Homo_sapiens.meme"
 
 width: 150
 genome: "hg38"
-n_jobs: "1"
+n_jobs: 1
+
+test_set: "--test_set"
+n_genes: 20
 
 min_corr: 0.0
 max_pval: 0.1
