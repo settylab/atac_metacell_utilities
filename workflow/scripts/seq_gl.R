@@ -1,7 +1,7 @@
 args <-commandArgs(trailingOnly=TRUE)
 library(SeqGL)
 
-span <- args[3]
+span <- as.numeric(args[3])
 org <- args[4]
 
 # Peaks directory
