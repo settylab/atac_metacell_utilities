@@ -6,7 +6,7 @@ A `snakemake` pipeline is constructed using a set of *rules* with defined inputs
 
 ## Overview:
 
-Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View the `Snakefile` to see details on each rule.
+Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View the [`Snakefile`](https://github.com/settylab/geneTF/blob/main/workflow/Snakefile) to see details on each rule.
 
 ![DAG of workflow](./dag.png)
 
