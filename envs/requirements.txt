@@ -3,7 +3,7 @@ aiohttp==3.8.1
 aiosignal==1.2.0
 alabaster==0.7.12
 amply==0.1.4
-anndata==0.8.0
+anndata==0.7.8
 appdirs==1.4.4
 async-timeout==4.0.2
 attmap==0.13.2
