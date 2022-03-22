@@ -54,12 +54,13 @@ pip install -r envs/requirements.txt
 
 To ensure the project runs smoothly, an `renv.lock` file is included under the `envs/` directory. Using the [`renv` package](https://rstudio.github.io/renv/index.html) makes it easy to distribute the required packages and their correct versions.
 
-
 If `renv` is not yet installed, run:
 
 ```
 snakemake --cores 1 renv_install --config renv_loc="path/to/user/R/library"
 ```
+**NOTE:** `--cores` can tell `snakemake` how many cores are available for use. It will automatically run the jobs in parallel, if possible.
+
 
 This will run the `snakemake` rule that will:
 1. Load the R module
@@ -132,6 +133,8 @@ If a different genome is being used, create a `data/` directory and place the `.
 
 After the environment has been set up and the configuration file is set, the pipeline is ready to run!
 
+**NOTE:** Reccommended to run on `gizmo`, not `rhino`! Cluster integration with `snakemake` directly for this pipeline is in the works!
+
 We can always conduct a "dry run" to test that all required inputs/parameters have been set before running the pipeline for real:
 
 ```
@@ -157,3 +160,11 @@ If you do this, make sure all the input dependencies have already been generated
 snakemake --cores 1 name_of_rule
 ```
 Simiarily, `-n` can be appended for a dry run
+
+## Log Files
+
+For the `fimo` and `gene_x_tf rules`, separate log files are created and can be accessed in the `logs/` directory.
+
+Other log files can be accessed in the `.snakemake/log` directory, although they are not very informative.
+
+*Improved logging is in progress.*
