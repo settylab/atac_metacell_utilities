@@ -170,9 +170,7 @@ def gene_tf_associations(gene_peak, peak_x_tf,
 def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     
     # map names to indices
-    peak_names = atac_ad.var_names
-    peak_idxses = dict(zip(peak_names, range(len(peak_names))))
-    
+    peak_names = atac_ad.var_names    
     tfs = peak_x_tf.var_names
 
     # initiate three DFs
@@ -182,22 +180,26 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     atac_expr = pd.DataFrame(atac_ad.X.todense(), index=atac_ad.obs_names, 
                              columns=atac_ad.var_names)
     
-    fimo_scores = pd.DataFrame(peak_x_tf.X.todense(), index=peak_x_tf.obs_names, 
+    fimo_scores = pd.DataFrame(peak_x_tf.X.todense(), index=peak_x_tf.obs['unsized_peak'], 
                                columns=peak_x_tf.var_names)
     
     for gene, tf_dict in tqdm(gene_tfs.items(),total=len(gene_tfs)):
         for tf, peaks in tf_dict.items():
-            # grab the relevant indicies
-            peak_idx = np.array([peak_idxses[p] for p in peaks])
 
             # sum across cells for each peak
             sum_acc = atac_expr.iloc[:, peak_idx].sum().sum()
-            avg_acc = atac_expr.iloc[:, peak_idx].sum().mean()
-            fimo_sc = fimo_scores.loc[:, tf].sum()
+            
+            # Sum up FIMO scores for all peaks
+            fimo_peaks = fimo_scores.loc[peaks, tf]
+            fimo_sc = fimo_peaks.sum()
+            
+            # Compute weighted accessibility score
+            weighted = atac_expr.loc[:, peaks].apply(lambda row: np.asarray(row) * np.asarray(fimo_peaks), axis=1)
             
             gtf_sum.loc[gene, tf] = sum_acc
             gtf_fimo.loc[gene, tf] = fimo_sc
-            gtf_avg.loc[gene, tf] = gtf_fimo.loc[gene,tf] * avg_acc
+            
+            gtf_avg.loc[gene, tf] = weighted.sum().sum()
     
     return gtf_sum, gtf_fimo, gtf_avg
             
@@ -209,9 +211,6 @@ def main(args):
     
     with open(args.gp_corr + "/gp_corr.pickle", 'rb') as handle:
         gene_peak = pickle.load(handle)
-    
-    # normalize atac
-    atac_ad = normalize_atac(atac_ad)
     
     # Filter genes for ones that have FIMO score
     gene_set = rna_ad.var_names
@@ -231,5 +230,8 @@ def main(args):
     for mat in [('/sum', gtf_sum), ('/fimo', gtf_fimo), ('/avg',gtf_avg)]:
         mat[1].to_csv(args.outdir + mat[0] + '.csv')
 
+        # Pickle objects:
+        write_pickle(args.outdir +  mat[0] + '.pickle', mat[1])
+        
 if __name__ == "__main__":
     main(args)

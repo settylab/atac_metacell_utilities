@@ -19,7 +19,7 @@ Three versions of the `gene x TF` matrix are produced, each with a different pro
 * average gene accessibility, weighted by FIMO scores
 
 ## Environment Setup
-In order to run this pipeline, certain python and R packages need to be installed. 
+In order to run this pipeline, certain python and R packages need to be installed. Importantly, the `environment.yaml`/`requirements.txt` files include the `snakemake` package.
 
 ### Modules
 We also rely on some packages through `module load` system provide by SciComp. Specifically:
@@ -34,8 +34,6 @@ We also rely on some packages through `module load` system provide by SciComp. S
 3. `MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4`
     * This includes the `fimo` tool used to find MOTIFs. If you wish to use your own installation of the MEME Suite, modifcy the following rule:
         * `fimo`
-
-Importantly, the `environment.yaml`/`requirements.txt` files include the `snakemake` package.
 
 ### Python Modules
 1. Load Anaconda:
@@ -174,6 +172,37 @@ If you do this, make sure all the input dependencies have already been generated
 snakemake --cores 1 name_of_rule
 ```
 Simiarily, `-n` can be appended for a dry run
+
+### Submitting to Slurm
+We can submit jobs to the cluster non-interactively by creating a shell script calling `snakemake`. An template script is shown below
+
+Output (stdout and stderr) captured by Slurm is written to a `.log` file, specified with the `--output` option.
+
+Here:
+
+* `$1` : name of `snakemake` rule to run
+* `$2` : number of cores to use
+
+```
+#!/bin/bash
+
+#SBATCH --cpus-per-task=16
+#SBATCH --output=/path/to/logs/%x_job-%j.log
+#SBATCH --job-name=snakemake
+#SBATCH --partition campus-new
+#SBATCH --nodes=1
+#SBATCH --time=1-00:00:00
+#SBATCH --mem=150
+
+snakemake --cores $2 $1
+
+```
+
+After creating the shell script, and making it executable, run:
+
+```
+sbatch name_of_script.sh rule_name num_cores
+```
 
 ## Log Files
 
