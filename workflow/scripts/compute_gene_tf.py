@@ -194,7 +194,7 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
             fimo_sc = fimo_peaks.sum()
             
             # Compute weighted accessibility score
-            weighted = atac_expr.loc[:, peaks].apply(lambda row: np.asarray(row) * np.asarray(fimo_peaks), axis=1)
+            weighted = atac_expr.loc[:, peaks].apply(lambda row: row.values * fimo_peaks.values, axis=1)
             
             gtf_sum.loc[gene, tf] = sum_acc
             gtf_fimo.loc[gene, tf] = fimo_sc
