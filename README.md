@@ -49,11 +49,11 @@ There are two options, using `pip` vs using `conda`
 With `conda`:
 
 ```
-env_name=gene-TF
+envName=gene-TF
 
-conda env create -n "$env_name" --file envs/environment.yaml
+conda env create -n "$envName" --file envs/environment.yaml
 
-conda activate "$env_name"
+conda activate "$envName"
 ```
 
 With `pip`:
@@ -95,10 +95,10 @@ config/config.yaml
 
 In order for the pipeline to run, you will have to set the following parameters:
 
-* `atac` *str* : Path to the SEACell level ATAC AnnData
-* `rna` *str* : Path to the SEACell level RNA AnnData
+* `atac` *str* : Path to the SEACell-level ATAC AnnData with normalized counts
+* `rna` *str* : Path to the SEACell-level RNA AnnData with normalized and log-transformed counts
 
-**NOTE:** The RNA and ATAC SEACell AnnDatas should have matched `obs_names`
+**NOTE:** The RNA and ATAC SEACell AnnDatas should have matched/common `obs_names`
 
 ### Optional Parameters:
 For the following parameters, default values can be used
