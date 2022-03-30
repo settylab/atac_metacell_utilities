@@ -188,8 +188,10 @@ Here:
 ```
 #!/bin/bash
 
+logPath=<path/to/logs/>
+
 #SBATCH --cpus-per-task=16
-#SBATCH --output=/path/to/logs/%x_job-%j.log
+#SBATCH --output=$logPath%x_job-%j.log
 #SBATCH --job-name=snakemake
 #SBATCH --partition campus-new
 #SBATCH --nodes=1
