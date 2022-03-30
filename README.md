@@ -49,9 +49,11 @@ There are two options, using `pip` vs using `conda`
 With `conda`:
 
 ```
-conda env create -n env_name --file envs/environment.yaml
+env_name=gene-TF
 
-conda activate env_name
+conda env create -n "$env_name" --file envs/environment.yaml
+
+conda activate "$env_name"
 ```
 
 With `pip`:
@@ -69,7 +71,7 @@ To ensure the project runs smoothly, an `renv.lock` file is included under the `
 If `renv` is not yet installed, run:
 
 ```
-snakemake --cores 1 renv_install --config renv_loc="path/to/user/R/library"
+snakemake --cores 1 renv_install --config renv_loc=<path/to/user/R/library>
 ```
 **NOTE:** `--cores` can tell `snakemake` how many cores are available for use. It will automatically run the jobs in parallel, if possible.
 
