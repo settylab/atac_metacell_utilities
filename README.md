@@ -133,6 +133,29 @@ For example if we wanted to generate a test_set:
 snakemake --cores 1 all --config test_set="--test_set"
 ```
 
+#### Passing in a different config file
+In the Snakefile, the global variable, `config`, is set with the line:
+
+```
+configfile: "config/config.yaml"
+```
+
+The keys defined in the default `config/config.yaml` can be **overwritten** by passing a different config file (still `.yaml`). For example:
+
+```
+snakemake --cores 1 all --configfile <new_config_file.yaml> 
+
+```
+
+**NOTE:** All keys defined by the `configfile:` statement, the `--configfile` and/or `--config` command line arguments are part of the final `config` dictionary. 
+
+*If two methods define the same key, command line arguments **overwrite** keys from the `configfile:` statement*
+
+Snakemake will output a statement to make it clear to the user:
+
+> Config file config/config.yaml is extended by additional config specified via the command line
+
+
 ## Optional: Download `hg38.gtf`
 
 For convenience, I have included a rule to download the *hg38.gtf* file into a data directory for use in the `gp_corr` rule.
@@ -164,16 +187,22 @@ To generate all files, run:
 snakemake --cores 1 all
 ```
 
-**NOTE:**
+**NOTE:** In the case that a rule fails, it is not necessary to rerun rules that successfully completed. 
 
-Individual rules can also be called:
+In fact, calling the `all` rule again will only run the rules for which their output is missing.
+```
+snakemake --cores 1 all
+```
 
-If you do this, make sure all the input dependencies have already been generated!
+
+For more control, individual rules can also be called:
+
+If you do this, make sure all the input dependencies have already been generated! `-n` can be appended for a dry run to determine if inputs are available.
 
 ```
 snakemake --cores 1 name_of_rule
 ```
-Simiarily, `-n` can be appended for a dry run
+
 
 ### Submitting to Slurm
 We can submit jobs to the cluster non-interactively by creating a shell script calling `snakemake`. An template script is shown below
