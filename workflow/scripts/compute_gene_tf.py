@@ -187,7 +187,7 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
         for tf, peaks in tf_dict.items():
 
             # sum across cells for each peak
-            sum_acc = atac_expr.iloc[:, peak_idx].sum().sum()
+            sum_acc = atac_expr.loc[:, peaks].sum().sum()
             
             # Sum up FIMO scores for all peaks
             fimo_peaks = fimo_scores.loc[peaks, tf]
