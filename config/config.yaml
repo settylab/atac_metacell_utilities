@@ -17,3 +17,8 @@ n_genes: 20
 min_corr: 0.0
 max_pval: 0.1
 min_peaks: 2
+
+ld_embedding: "X_svd"
+read_length: 147
+op_nbors: 3
+open_peak_pval: 0.01
