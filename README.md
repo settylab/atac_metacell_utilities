@@ -144,7 +144,6 @@ The keys defined in the default `config/config.yaml` can be **overwritten** by p
 
 ```
 snakemake --cores 1 all --configfile <new_config_file.yaml> 
-
 ```
 
 **NOTE:** All keys defined by the `configfile:` statement, the `--configfile` and/or `--config` command line arguments are part of the final `config` dictionary. 

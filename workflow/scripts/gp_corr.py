@@ -68,6 +68,22 @@ if __name__ == "__main__":
         default=20,
         metavar="int"
     )
+    
+    parser.add_argument(
+        "--min_corr",
+        metavar="float",
+        type=float,
+        default=0.0,
+        help="Minimum (excl) correlation value",
+    )
+    
+    parser.add_argument(
+        "--max_pval",
+        metavar="float",
+        type=float,
+        default=0.1,
+        help="Maximum (excl) p-value",
+    )
 
     args = parser.parse_args()
 
@@ -91,7 +107,7 @@ def main(args):
                                                               span=args.transcript_span, n_jobs=args.n_jobs,
                                                               gene_set=gene_set)
     
-    peak_counts = SEACells.genescores.get_peak_counts(gp_corrs)
+    peak_counts = SEACells.genescores.get_peak_counts(gp_corrs, max_pval=args.max_pval, min_corr=args.min_corr)
     
     # save files
     with open(args.outdir + '/gp_corr.pickle', 'wb') as handle:
@@ -103,3 +119,4 @@ def main(args):
     
 if __name__ == "__main__":
     main(args)
+    

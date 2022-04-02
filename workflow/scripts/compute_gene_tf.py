@@ -59,7 +59,7 @@ if __name__ == "__main__":
         metavar="int",
         type=int,
         default=2,
-        help="Minimum (incl) num of significant peaks for gene to pass filtering",
+        help="Minimum num of significant peaks for gene to pass filtering, inclusive",
     )
     
     parser.add_argument(
@@ -70,7 +70,6 @@ if __name__ == "__main__":
         default="results/gtf_mats/",
         metavar="directory"
     )
-    
     
     args = parser.parse_args()
 

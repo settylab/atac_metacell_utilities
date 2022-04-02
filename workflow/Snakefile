@@ -9,7 +9,8 @@ rule all:
     input:
         gene_peak = expand("{dirname}gp_corrs/", dirname=output_dir),
         peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
-        gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir)
+        gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
+        accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir)
 
 # ---- Genome Download Rule ---- #
 
@@ -97,15 +98,47 @@ rule gp_corr:
     params:
         n_jobs = config["n_jobs"],
         test_set = config["test_set"],
-        n_genes = config["n_genes"]
+        n_genes = config["n_genes"],
+        min_corr = config["min_corr"],
+        max_pval = config["max_pval"]
+        
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.gp_dir}
         python {input.script} --atac={input.atac} --rna={input.rna} -o={output.gp_dir} --n_jobs={params.n_jobs} \\
-            --gtf_file={input.gtf_file} {params.test_set} --n_genes={params.n_genes}
+            --gtf_file={input.gtf_file} {params.test_set} --n_genes={params.n_genes} --min_corr={params.min_corr} \\
+            --max_pval={params.max_pval}
         """
+
+# ---- Accessibility Rules ---- #
+rule acc_metric:
+    input:
+        atac = config["atac"],
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
+        script = config["scripts"] + "acc_metrics.py",
+    params:
+        embedding = config["ld_embedding"],
+        read_len = config["read_length"],
+        n_nbors = config["op_nbors"],
+        op_pval = config["open_peak_pval"],
+        gp_pval = config["max_pval"],
+        min_corr = config["min_corr"],
+        min_peaks = config["min_peaks"]
+    output:
+        acc_dir = directory(expand("{dirname}accessibility/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {output.acc_dir}
+        python {input.script}  --atac={input.atac} --gp_corr={input.gp_dir} -o={output.acc_dir} \\
+             --embedding={params.embedding} --read_len={params.read_len} --n_nbors={params.n_nbors} \\
+             --op_pval={params.op_pval} --gp_pval={params.gp_pval} --min_corr={params.min_corr} \\
+             --min_peaks={params.min_peaks}
+        """
+
+# ---- Computation Rule ---- #
+
 rule gene_x_tf:
     input:
         atac = config["atac"],
