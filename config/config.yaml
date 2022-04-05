@@ -5,6 +5,8 @@ renv_loc: <path/to/user/R/library>
 
 atac: <path/to/ATAC/AnnData/here>
 rna: <path/to/RNA/AnnData/here>
+SEACell_label: "SEACell" 
+
 in_meme: "/fh/fast/setty_m/grp/motif_databases/CIS-BP_2.00/Homo_sapiens.meme"
 
 width: 150

@@ -100,11 +100,9 @@ def main(args):
 
     peaks_df = pd.read_csv(args.peak_file, sep='\t')
     fimo_scores = args.fimo_res + '/fimo.tsv'
-    print(fimo_scores)
     
     # Build peak x TF AnnData
     pxtf_ad = build_peak_tf(fimo_scores, peaks_df, atac_ad)
-
     pxtf_ad.obs_names = peaks_df.name
     
     # annotated the full size peak
