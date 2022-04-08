@@ -40,10 +40,10 @@ rule renv_init_restore:
 
 rule resize_peaks:
     input:
-        atac = config["atac"],
+        atac = config["anndata"]["atac"],
         script = config["scripts"] + "resize_peaks.py"
     params:
-        width = config["width"],
+        width = config["peaks"]["width"],
         out_dir = output_dir
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
@@ -55,8 +55,8 @@ rule all_seqs:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "seq_gl.R"
     params:
-        span = config["width"],
-        genome = config["genome"]
+        span = config["peaks"]["width"],
+        genome = config["peaks"]["genome"]
     output:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
@@ -66,7 +66,7 @@ rule all_seqs:
         """
 rule fimo:
     input:
-        meme = config["in_meme"],
+        meme = config["peaks"]["meme_file"],
         seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
         fimo_dir = directory(expand("{dirname}fimo_result/", dirname=output_dir))
@@ -81,7 +81,7 @@ rule fimo:
 rule peak_tf:
     input:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
-        atac = config["atac"],
+        atac = config["anndata"]["atac"],
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
     output:
@@ -91,16 +91,16 @@ rule peak_tf:
 
 rule gp_corr:
     input:
-        atac = config["atac"],
-        rna = config["rna"],
+        atac = config["anndata"]["atac"],
+        rna = config["anndata"]["rna"],
         script = config["scripts"] + "gp_corr.py",
-        gtf_file = expand("data/{genome}.gtf", genome=config["genome"])
+        gtf_file = expand("data/{genome}.gtf", genome=config["peaks"]["genome"])
     params:
-        n_jobs = config["n_jobs"],
-        test_set = config["test_set"],
-        n_genes = config["n_genes"],
-        min_corr = config["min_corr"],
-        max_pval = config["max_pval"]
+        n_jobs = config["gene_peak_corr_config"]["n_jobs"],
+        test_set = config["gene_peak_corr_config"]["test_set"],
+        n_genes = config["gene_peak_corr_config"]["n_genes"],
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["min_corr"]
         
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
@@ -115,17 +115,17 @@ rule gp_corr:
 # ---- Accessibility Rules ---- #
 rule acc_metric:
     input:
-        atac = config["atac"],
+        atac = config["anndata"]["atac"],
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "acc_metrics.py",
     params:
-        embedding = config["ld_embedding"],
-        read_len = config["read_length"],
-        n_nbors = config["op_nbors"],
-        op_pval = config["open_peak_pval"],
-        gp_pval = config["max_pval"],
-        min_corr = config["min_corr"],
-        min_peaks = config["min_peaks"]
+        embedding = config["acc_metric"]["ld_embedding"],
+        read_len = config["acc_metric"]["read_length"],
+        n_nbors = config["acc_metric"]["op_nbors"],
+        op_pval = config["acc_metric"]["open_peak_pval"],
+        gp_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
     output:
         acc_dir = directory(expand("{dirname}accessibility/", dirname=output_dir))
     shell:
@@ -141,15 +141,15 @@ rule acc_metric:
 
 rule gene_x_tf:
     input:
-        atac = config["atac"],
-        rna = config["rna"],
+        atac = config["anndata"]["atac"],
+        rna = config["anndata"]["rna"],
         peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
-        min_corr = config["min_corr"],
-        max_pval = config["max_pval"],
-        min_peaks = config["min_peaks"]
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
+        min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
     log:
         out = config["logs"] + "gtf.out"
     output:
