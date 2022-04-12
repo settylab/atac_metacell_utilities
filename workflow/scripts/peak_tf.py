@@ -103,10 +103,10 @@ def main(args):
     
     # Build peak x TF AnnData
     pxtf_ad = build_peak_tf(fimo_scores, peaks_df, atac_ad)
-    pxtf_ad.obs_names = peaks_df.name
+    pxtf_ad.obs_names = atac_ad.var_names
     
-    # annotated the full size peak
-    pxtf_ad.obs['unsized_peak'] = atac_ad.var_names
+    # annotated the resized peaks
+    pxtf_ad.obs['resized_peak'] = peaks_df['name'].values
     
     pxtf_ad.write(args.outdir + 'peak_x_tf.h5ad')
 

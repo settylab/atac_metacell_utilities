@@ -139,7 +139,7 @@ def gene_tf_associations(gene_peak, peak_x_tf,
         if len(peaks) >= min_peaks:
 
             # grab scores of all TFs for the sig peaks
-            tf_association = peak_x_tf[peak_x_tf.obs['unsized_peak'].isin(peaks), :].X
+            tf_association = peak_x_tf[peak_x_tf.obs_names.isin(peaks), :].X
 
             # convert scores to bool, 0 = False (peak x tf)
             tf_association = tf_association.toarray().astype(bool)
@@ -179,7 +179,7 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     atac_expr = pd.DataFrame(atac_ad.X.todense(), index=atac_ad.obs_names, 
                              columns=atac_ad.var_names)
     
-    fimo_scores = pd.DataFrame(peak_x_tf.X.todense(), index=peak_x_tf.obs['unsized_peak'], 
+    fimo_scores = pd.DataFrame(peak_x_tf.X.todense(), index=peak_x_tf.obs_names, 
                                columns=peak_x_tf.var_names)
     
     for gene, tf_dict in tqdm(gene_tfs.items(),total=len(gene_tfs)):
