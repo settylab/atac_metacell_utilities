@@ -64,7 +64,7 @@ def make_peak_df(peaks_pr):
     peaks_df['chromEnd'] = end
     
     # summit
-    peaks_df['summit']  = args.width /2
+    peaks_df['summit']  = (args.width / 2).astype(int)
 
     # Score
     peaks_df['score'] = 1

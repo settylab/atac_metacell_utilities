@@ -81,13 +81,14 @@ rule fimo:
 rule peak_tf:
     input:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
-        atac = config["anndata"]["atac"],
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
+    params:
+        atac = config["anndata"]["atac"]
     output:
         expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} --atac={input.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
+        "python {input.script} --atac={params.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
 
 rule gp_corr:
     input:

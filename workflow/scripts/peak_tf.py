@@ -7,19 +7,19 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA"
-    )
-    
-    parser.add_argument(
         "--peak_file",
         metavar="file",
         type=str,
         required=True,
         help="Path to peaks.bed file",
+    )
+    
+    parser.add_argument(
+        "--atac",
+        metavar="AnnData",
+        type=str,
+        default="",
+        help="Path to ATAC MC AnnData, common obs with RNA"
     )
     
     parser.add_argument(
@@ -47,7 +47,7 @@ import pandas as pd
 import numpy as np
 import subprocess
 
-def build_peak_tf(fimo_scores, peaks_df, atac_ad):
+def build_peak_tf(fimo_scores, peaks_df):
     # Motif information 
     motifs = pd.Series()
     motif_index = 0
@@ -87,7 +87,7 @@ def build_peak_tf(fimo_scores, peaks_df, atac_ad):
             rec_index += 1
             
     # Create AnnData        
-    pxtf_scores = csr_matrix((values, (x, y)), (atac_ad.shape[1], motif_index))
+    pxtf_scores = csr_matrix((values, (x, y)), (len(peaks_df.name), motif_index))
     pxtf_ad = sc.AnnData(pxtf_scores)
     pxtf_ad.var_names = motifs.index
     
@@ -95,19 +95,22 @@ def build_peak_tf(fimo_scores, peaks_df, atac_ad):
 
 
 def main(args):
-    # Load data
-    atac_ad = sc.read(args.atac)
-
     peaks_df = pd.read_csv(args.peak_file, sep='\t')
     fimo_scores = args.fimo_res + '/fimo.tsv'
     
     # Build peak x TF AnnData
-    pxtf_ad = build_peak_tf(fimo_scores, peaks_df, atac_ad)
-    pxtf_ad.obs_names = atac_ad.var_names
+    pxtf_ad = build_peak_tf(fimo_scores, peaks_df)
     
-    # annotated the resized peaks
-    pxtf_ad.obs['resized_peak'] = peaks_df['name'].values
-    
+    if len(args.atac) !=0 :
+        # Load data
+        atac_ad = sc.read(args.atac)
+        pxtf_ad.obs_names = atac_ad.var_names
+   
+        # annotated the resized peaks
+        pxtf_ad.obs['resized_peak'] = peaks_df['name'].values
+    else:
+        pxtf_ad.obs_names = peaks_df['name']
+        
     pxtf_ad.write(args.outdir + 'peak_x_tf.h5ad')
 
     
