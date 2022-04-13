@@ -29,48 +29,34 @@ if __name__ == "__main__":
         default=150,
         metavar="width"
     )
-    
+
     args = parser.parse_args()
 
-import pyranges as pr
 import pandas as pd
 import scanpy as sc
-import numpy as np
-# If we make the `_pyranges_from_strings()` function in SEACells public, I can
-#     I can use that instead of defining this function!
-def pyranges_from_strings(pos_list):
-    # Chromosome and positions
-    chrom = pos_list.str.split(':').str.get(0)
-    start = pd.Series(pos_list.str.split(':').str.get(1)).str.split('-').str.get(0)
-    end = pd.Series(pos_list.str.split(':').str.get(1)).str.split('-').str.get(1)
-    
-    # Create ranges
-    gr = pr.PyRanges(chromosomes=chrom, starts=start, ends=end)
-    
-    return gr
 
 
-def make_peak_df(peaks_pr):
-    
-    peaks_df = pd.DataFrame()
-    
-    midpoint = peaks_pr.Start + ((peaks_pr.End - peaks_pr.Start) / 2).astype(int)
-    start = midpoint - np.floor(args.width / 2).astype(int)
-    end = midpoint + np.floor(args.width / 2).astype(int)
-    
+def make_peak_df(peaks_list):
+
+    # Information about peaks
+    chrom = peaks_list.str.split(':').str.get(0)
+    start = pd.Series(peaks_list.str.split(':').str.get(1)).str.split('-').str.get(0)
+    end = pd.Series(peaks_list.str.split(':').str.get(1)).str.split('-').str.get(1)
+
     # Positions
-    peaks_df['chrom'] = peaks_pr.Chromosome
-    peaks_df['chromStart'] = start
-    peaks_df['chromEnd'] = end
-    
+    peaks_df = pd.DataFrame()
+    peaks_df['chrom'] = chrom
+    peaks_df['chromStart'] = start.astype(int)
+    peaks_df['chromEnd'] = end.astype(int)
+
     # summit
-    peaks_df['summit']  = (args.width / 2).astype(int)
+    peaks_df['summit'] = ((peaks_df['chromEnd'] - peaks_df['chromStart']) / 2).astype(int)
 
     # Score
     peaks_df['score'] = 1
 
     # Names
-    peaks_df['name'] = peaks_df['chrom'].astype(str) + ':' + peaks_df['chromStart'].astype(str) + '-' + peaks_df['chromEnd'].astype(str)
+    peaks_df['name'] = peaks_list.values
 
     return peaks_df
 
@@ -78,9 +64,7 @@ def main(args):
     # Load data
     atac_ad = sc.read(args.atac)
 
-    peaks_pr = pyranges_from_strings(atac_ad.var_names)
-    
-    peaks_df = make_peak_df(peaks_pr)
+    peaks_df = make_peak_df(atac_ad.var_names)
     peaks_df.to_csv(args.outdir + 'peaks.bed', sep='\t', index=None, header=True)
     
     
