@@ -38,17 +38,16 @@ rule renv_init_restore:
         
 # ---- Preparation Rules ---- #
 
-rule resize_peaks:
+rule prepare_peak_file:
     input:
         atac = config["anndata"]["atac"],
-        script = config["scripts"] + "resize_peaks.py"
+        script = config["scripts"] + "prepare_peak_file.py"
     params:
-        width = config["peaks"]["width"],
         out_dir = output_dir
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
     shell:
-        "python {input.script} --atac={input.atac} --outdir={params.out_dir} --width={params.width}"
+        "python {input.script} --atac={input.atac} --outdir={params.out_dir}"
     
 rule all_seqs:
     input:

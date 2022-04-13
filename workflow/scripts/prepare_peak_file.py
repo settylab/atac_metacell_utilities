@@ -1,6 +1,6 @@
 if __name__ == "__main__":
     import argparse
-    desc = "Resize the widths of peaks"
+    desc = "Prepares peak file for downstream MOTIF analysis"
     
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -22,14 +22,6 @@ if __name__ == "__main__":
         default="results/",
         metavar="directory"
     )
-    parser.add_argument(
-        "--width",
-        type=int,
-        help="Width of final peak",
-        default=150,
-        metavar="width"
-    )
-
     args = parser.parse_args()
 
 import pandas as pd
@@ -49,7 +41,7 @@ def make_peak_df(peaks_list):
     peaks_df['chromStart'] = start.astype(int)
     peaks_df['chromEnd'] = end.astype(int)
 
-    # summit
+    # Summit
     peaks_df['summit'] = ((peaks_df['chromEnd'] - peaks_df['chromStart']) / 2).astype(int)
 
     # Score
