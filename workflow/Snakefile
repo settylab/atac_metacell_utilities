@@ -82,12 +82,10 @@ rule peak_tf:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
-    params:
-        atac = config["anndata"]["atac"]
     output:
         expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} --atac={params.atac} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
+        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
 
 rule gp_corr:
     input:
@@ -166,5 +164,8 @@ rule gene_x_tf:
 rule clean:
     params:
         out_dir = output_dir + "*"
-    shell:
-        "rm -rfi {params.out_dir}"
+    run:
+        if config["interactive"]:
+            shell("rm -ri {params.out_dir}")
+        else:
+            shell("rm -r {params.out_dir}")

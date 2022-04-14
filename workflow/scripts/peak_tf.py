@@ -15,14 +15,6 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        default="",
-        help="Path to ATAC MC AnnData, common obs with RNA"
-    )
-    
-    parser.add_argument(
         "--fimo_res",
         metavar="directory",
         type=str,
