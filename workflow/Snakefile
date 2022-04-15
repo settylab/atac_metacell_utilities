@@ -98,7 +98,7 @@ rule gp_corr:
         test_set = config["gene_peak_corr_config"]["test_set"],
         n_genes = config["gene_peak_corr_config"]["n_genes"],
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        max_pval = config["gene_peak_corr_cutoffs"]["min_corr"]
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
         
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
