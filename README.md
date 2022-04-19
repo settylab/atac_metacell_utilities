@@ -14,9 +14,9 @@ Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View t
 
 Three versions of the `gene x TF` matrix are produced, each with a different proxy for quantifying regulation:
 
-* sum of gene accessibility from ATAC
+* sum of gene accessibility based on ATAC peak counts
 * sum of FIMO scores
-* average gene accessibility, weighted by FIMO scores
+* sum of gene accessibility, peaks weighted by FIMO scores
 
 ## Environment Setup
 In order to run this pipeline, certain python and R packages need to be installed. Importantly, the `environment.yaml`/`requirements.txt` files include the `snakemake` package.

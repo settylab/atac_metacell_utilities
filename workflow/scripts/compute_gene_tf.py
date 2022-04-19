@@ -197,10 +197,9 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
             
             gtf_sum.loc[gene, tf] = sum_acc
             gtf_fimo.loc[gene, tf] = fimo_sc
-            
-            gtf_avg.loc[gene, tf] = weighted.sum().sum()
+            gtf_weighted.loc[gene, tf] = weighted.sum().sum()
     
-    return gtf_sum, gtf_fimo, gtf_avg
+    return gtf_sum, gtf_fimo, gtf_weighted
             
 def main(args):
     # Load data
@@ -223,10 +222,10 @@ def main(args):
                                     max_pval=args.max_pval, min_peaks=args.min_peaks)
     
     # Compute gene x TF matrices
-    gtf_sum, gtf_fimo, gtf_avg = compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs)
+    gtf_sum, gtf_fimo, gtf_weighted = compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs)
 
     
-    for mat in [('/sum', gtf_sum), ('/fimo', gtf_fimo), ('/avg',gtf_avg)]:
+    for mat in [('/sum', gtf_sum), ('/fimo', gtf_fimo), ('/weighted_sum', gtf_weighted)]:
         mat[1].to_csv(args.outdir + mat[0] + '.csv')
 
         # Pickle objects:
