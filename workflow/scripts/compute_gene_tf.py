@@ -168,13 +168,11 @@ def gene_tf_associations(gene_peak, peak_x_tf,
 
 def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     
-    # map names to indices
-    peak_names = atac_ad.var_names    
     tfs = peak_x_tf.var_names
 
     # initiate three DFs
     gtf_sum = pd.DataFrame(0.0,index=gene_peak.index, columns=tfs)
-    gtf_fimo, gtf_avg = gtf_sum.copy(), gtf_sum.copy()
+    gtf_fimo, gtf_weighted = gtf_sum.copy(), gtf_sum.copy()
   
     atac_expr = pd.DataFrame(atac_ad.X.todense(), index=atac_ad.obs_names, 
                              columns=atac_ad.var_names)
