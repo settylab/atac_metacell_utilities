@@ -216,14 +216,11 @@ Here:
 ```
 #!/bin/bash
 
-logPath=<path/to/logs/>
-
 #SBATCH --cpus-per-task=16
-#SBATCH --output=$logPath%x_job-%j.log
 #SBATCH --job-name=snakemake
 #SBATCH --partition campus-new
 #SBATCH --nodes=1
-#SBATCH --time=1-00:00:00
+#SBATCH --time=2-00:00:00
 #SBATCH --mem=150
 
 snakemake --cores $2 $1
@@ -233,7 +230,7 @@ snakemake --cores $2 $1
 After creating the shell script, and making it executable, run:
 
 ```
-sbatch name_of_script.sh rule_name num_cores
+sbatch -o /path/to/log/file.log name_of_script.sh rule_name num_cores
 ```
 
 ## Log Files
