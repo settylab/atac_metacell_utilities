@@ -105,8 +105,9 @@ For the following parameters, default values can be used
 
 **NOTE:** Make sure the `in_meme` file is appropriate for the chosen `genome`
 
-* `in_meme` *str* : Path to the `.meme` file for FIMO, `default=<motif_dir>/CIS-BP-DOTTO/cis-bp-tf-information.meme`
-    * Other motif databases, including `CIS-BP_2.00/Homo_sapiens.meme`, can be found at: `motif_dir=/fh/fast/setty_m/grp/motif_databases/`
+* `in_meme` *str* : Path to the `.meme` file for FIMO, `default=data/cis-bp-tf-information.meme`
+    * The default meme file was created using the script: `workflow/scripts/make_meme.py`
+    * Other motif databases, including `CIS-BP_2.00/Homo_sapiens.meme`, can be found at: `/fh/fast/setty_m/grp/motif_databases/`
 * `width` *int* : Number of base pairs to resize ATAC peaks to. The summit will be the midpoint, `default=150`
 * `genome` *str* : Genome to use, will be referenced in the `all_seqs` and `gp_corr` rules, `default=hg38`
     * Currently supported genomes include:  
