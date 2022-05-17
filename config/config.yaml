@@ -13,7 +13,7 @@ anndata:
 peaks:
     width: 150
     genome: "hg38"
-    meme_file: "/fh/fast/setty_m/grp/motif_databases/CIS-BP_2.00/Homo_sapiens.meme"
+    meme_file: "/fh/fast/setty_m/grp/motif_databases/CIS-BP-DOTTO/cis-bp-tf-information.meme"
 
 gene_peak_corr_config:
     n_jobs: 1
