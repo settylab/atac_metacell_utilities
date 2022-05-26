@@ -76,21 +76,12 @@ if __name__ == "__main__":
 import pandas as pd
 import numpy as np
 import scanpy as sc
-import SEACells
 import pickle
 from tqdm.auto import tqdm
-from sklearn.feature_extraction.text import TfidfTransformer
     
 def write_pickle(file_path, obj):    
     with open(file_path, 'wb') as handle:
         pickle.dump(obj, handle, protocol=pickle.HIGHEST_PROTOCOL)    
-
-def normalize_atac(atac_ad):
-    mat = atac_ad.X.astype(int)
-    tfidf = TfidfTransformer().fit(mat)
-    atac_ad.X = tfidf.transform(mat)
-    
-    return atac_ad
 
 def filter_gene(ad, gene_list):
     has_expr = [g in gene_list for g in ad.var_names]
@@ -161,7 +152,7 @@ def gene_tf_associations(gene_peak, peak_x_tf,
                 n_gp_assoc += 1
     
     # log number of genes that passed thresholds
-    print(f"{len(gene_tfs):,} genes and {n_gp_assoc:,} gene-TF combinations with at least two peaks.")
+    print(f"{len(gene_tfs):,} genes and {n_gp_assoc:,} gene-TF combinations with at least {min_peaks} peaks.")
 
     return gene_tfs
 
