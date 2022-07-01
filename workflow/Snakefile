@@ -165,7 +165,7 @@ rule clean:
     params:
         out_dir = output_dir + "*"
     run:
-        if config["interactive"]:
+        if config["interactive_clean"]:
             shell("rm -ri {params.out_dir}")
         else:
             shell("rm -r {params.out_dir}")

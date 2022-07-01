@@ -1,7 +1,7 @@
 scripts: "workflow/scripts/"
 output: "results/"
 logs: "logs/"
-interactive: True
+interactive_clean: True
 
 renv_loc: <path/to/user/R/library>
 
