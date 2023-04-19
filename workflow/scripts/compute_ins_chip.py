@@ -1,6 +1,6 @@
 if __name__ == "__main__":
     import argparse
-    desc = "Creates three versions of gene x TF matrices"
+    desc = "Computes in silico ChIP matrix"
     
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -100,7 +100,6 @@ def c(a, b):
     out = np.empty((m, 1))
 
     for i in range(m):
-        
         out[i] =  np.dot((a - mu_a),(b[i] - mu_b[i]))  / k / sig_a / sig_b[i]
 
     return out
@@ -120,6 +119,7 @@ def compute_corrs(tf_set, rna_mat, atac_mat, fimo_mat, verbose=True):
         cor = c(tf_rank, peak_ranks.T)
 
         corr_mat.loc[relevant_peaks, tf] = cor[:,0]
+    
     return corr_mat
 
 def compute_ins_mat(tf_set, corr_mat, atac_mat, fimo_mat, verbose=True):
@@ -172,8 +172,8 @@ def main(args):
     all_tfs = fimo_mat.columns
     
     # compute correlation and in silico chip matrix
-    corr_mat = compute_corrs(all_tfs,verbose=args.verbose)
-    insc_mat = compute_ins_mat(all_tfs, corr_mat,verbose=args.verbose)
+    corr_mat = compute_corrs(all_tfs,rna_mat, atac_mat, fimo_mat, verbose=args.verbose)
+    insc_mat = compute_ins_mat(all_tfs, corr_mat, atac_mat, fimo_mat, verbose=args.verbose)
     
     ## EXPORT DATA ##
     if not os.path.exists(args.outdir):

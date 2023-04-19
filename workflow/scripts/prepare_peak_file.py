@@ -57,7 +57,7 @@ def main(args):
     atac_ad = sc.read(args.atac)
 
     peaks_df = make_peak_df(atac_ad.var_names)
-    peaks_df.to_csv(args.outdir + 'peaks.bed', sep='\t', index=None, header=True)
+    peaks_df.to_csv(args.outdir + 'peaks.bed', sep='\t', index=None, header=False)
     
     
 if __name__ == "__main__":

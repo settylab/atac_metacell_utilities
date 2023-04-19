@@ -1,41 +1,25 @@
 if __name__ == "__main__":
     import argparse
-    desc = "Creates three versions of gene x TF matrices"
+    desc = "Filters and binarizes chip matrix for chromvar"
     
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
     parser.add_argument(
-        "--atac",
+        "--sc_atac",
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
+        help="Path to ATAC single-cell AnnData",
     )
     
     parser.add_argument(
-        "--ins_chip",
-        metavar="sparse matrix, MTX file",
+        "--ins_chip_dir",
+        metavar="directory",
         type=str,
         required=True,
-        help="Path to in silico ChIP matrix, peak x TF",
-    )
-    
-    parser.add_argument(
-        "--tf_names",
-        metavar="TF names",
-        type=str,
-        required=True,
-        help="Path to in silico ChIP matrix colnames",
-    )
-    
-    parser.add_argument(
-        "--peak_names",
-        metavar="peak name list",
-        type=str,
-        required=True,
-        help="Path to peak list",
+        help="Path to in silico ChIP output directory",
     )
     
     parser.add_argument(
@@ -81,21 +65,31 @@ def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
 
 
 def main(args):
-    insc_mat = scipy.io.mmread(args.ins_chip)
-    insc_df = pd.DataFrame(insc_mat.A, columns=args.tf_names, index=args.peak_names)
-    sc_atac_ad = args.sc_atac
+    insc_mat = scipy.io.mmread(args.ins_chip_dir + '/ins_chip.mtx')
+    tf_names = pd.read_csv(args.ins_chip_dir + '/tf_names.csv')['tf_name']
+    peak_names = pd.read_csv(args.ins_chip_dir + '/tf_names.csv')['peak_name']
+    
+    insc_df = pd.DataFrame(insc_mat.A, columns=tf_names, index=peak_names)
     
     binary_mat = filt_and_binarize(insc_df, args.min_chip, args.min_peak_hits)
     print(f'Filtered {len(args.tf_names)} down to {binary_mat.shape[1]} TFs for chromVAR')
 
     # Binary for chromvar
-    bin_ins_outfile = args.outdir +'/bin_ins_chip.mtx'
     if args.verbose:
         print(f'writing binary in silico ChIP matrix and TF names...')
     #export binary matrix for chromVAR
-    scipy.io.mmwrite(bin_ins_outfile, csr_matrix(binary_mat.values))
+    scipy.io.mmwrite(args.outdir +'/bin_ins_chip.mtx', csr_matrix(binary_mat.values))
     # export tf names
     pd.Series(binary_mat.columns).to_csv(args.outdir +'/chromvar_tf_names.csv', index=False, header=['tf_name'])
+    
+    
+    sc_atac_ad = args.sc_atac
+    sc_atac_ad = sc_atac_ad[:,peak_names]
+    
+    if ~issparse(sc_atac_ad.X):
+        sc_atac_ad.X = csr_matrix(sc_atac_ad.X)
+    
+    scipy.io.mmwrite(args.outdir +'/sc_atac_counts.mtx', sc_atac_ad.X)
     
     if 'nFrags' not in sc_atac_ad.obs.columns:
         raise KeyError("'nFrags' not in scATAC .obs")    

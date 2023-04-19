@@ -111,7 +111,34 @@ rule gp_corr:
         """
 
 # ---- In Silico ChIP Rules ---- #
-
+rule compute_ins_chip:
+    input:
+        atac = config["anndata"]["atac"],
+        rna = config["anndata"]["rna"],
+        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        script = config["scripts"] + "compute_ins_chip.py",
+    params:
+        verbose = config["ins_chip"]["verbose"],
+    output:
+        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {output.insc_dir}
+        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} --verbose={params.verbose}
+        """
+rule prep_chromvar:
+    input:
+        atac = config["anndata"]["atac"],
+        ins_chip_out = expand("{dirname}ins_chip/", dirname=output_dir),
+        script = config["scripts"] + "compute_ins_chip.py",
+        peak_file = expand("{dirname}peaks.bed", dirname=output_dir)
+    output:
+        chromvar_dir = directory(expand("{dirname}chromvar/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {output.chromvar_dir}
+        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} --peak_file={input.peak_file} -o={output.chromvar_dir} 
+        """
 
 
 # ---- Accessibility Rules ---- #
