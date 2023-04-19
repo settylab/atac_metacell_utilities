@@ -17,7 +17,7 @@ peaks:
 
 ins_chip:
     verbose: False
-    min_chip: 0.15
+    min_chip_score: 0.15
     min_peak_hits: 30
 
 gene_peak_corr_config:

@@ -7,10 +7,11 @@ output_dir = config["output"]
 # ---- Main Rule ---- #
 rule all:
     input:
-        gene_peak = expand("{dirname}gp_corrs/", dirname=output_dir),
-        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        #gene_peak = expand("{dirname}gp_corrs/", dirname=output_dir),
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
-        accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir)
+        accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
+        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir)
+
 
 # ---- Genome Download Rule ---- #
 
@@ -132,27 +133,26 @@ rule prep_chromvar:
         ins_chip_out = expand("{dirname}ins_chip/", dirname=output_dir),
         script = config["scripts"] + "compute_ins_chip.py"
     params:
-        min_chip = config["ins_chip"]["min_chip_score"]
+        min_chip = config["ins_chip"]["min_chip_score"],
         min_peak_hits = config["ins_chip"]["min_peak_hits"]
     output:
-        chromvar_dir = directory(expand("{dirname}chromvar/", dirname=output_dir))
+        chromvar_indir = directory(expand("{dirname}chromvar_input/", dirname=output_dir))
     shell:
         """
-        mkdir -p {output.chromvar_dir}
+        mkdir -p {output.chromvar_indir}
         python {input.script} --sc_atac={input.sc_atac} --ins_chi_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
-            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_dir} 
+            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir} 
         """
 rule chromvar:
     input:
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
-        chromvar_dir = directory(expand("{dirname}chromvar/", dirname=output_dir))
+        chromvar_indir = expand("{dirname}chromvar_input/", dirname=output_dir)
     output:
-        deviations = expand("{dirname}chromvar/output/deviations.csv", dirname=output_dir)
-        zs_deviations = expand("{dirname}chromvar/output/deviations_zs.csv", dirname=output_dir)
+        chromvar_outdir = directory(expand("{dirname}chromvar_output/", dirname=output_dir))
     shell:
         """
         ml R/4.1.0-foss-2020b
-        Rscript {input.script} {input.peak_file} {input.chromvar_dir}
+        Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir}
         """
 
 # ---- Accessibility Rules ---- #
