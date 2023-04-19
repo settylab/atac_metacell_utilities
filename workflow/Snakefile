@@ -110,6 +110,10 @@ rule gp_corr:
             --max_pval={params.max_pval}
         """
 
+# ---- In Silico ChIP Rules ---- #
+
+
+
 # ---- Accessibility Rules ---- #
 rule acc_metric:
     input:
