@@ -8,12 +8,17 @@ renv_loc: <path/to/user/R/library>
 anndata:
     atac: <path/to/ATAC/AnnData/here>
     rna: <path/to/RNA/AnnData/here>
-    SEACell_label: "SEACell" 
+    sc_atac: <path/to/singlecell/ATAC/AnnData/here>
 
 peaks:
     width: 150
     genome: "hg38"
     meme_file: "data/cis-bp-tf-information.meme"
+
+ins_chip:
+    verbose: False
+    min_chip: 0.15
+    min_peak_hits: 30
 
 gene_peak_corr_config:
     n_jobs: 1

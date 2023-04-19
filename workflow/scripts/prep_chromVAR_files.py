@@ -47,7 +47,6 @@ if __name__ == "__main__":
         metavar="directory"
     )
 
-
     args = parser.parse_args()
 
 import pandas as pd

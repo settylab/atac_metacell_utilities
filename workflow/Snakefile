@@ -128,18 +128,32 @@ rule compute_ins_chip:
         """
 rule prep_chromvar:
     input:
-        atac = config["anndata"]["atac"],
+        sc_atac = config["anndata"]["sc_atac"],
         ins_chip_out = expand("{dirname}ins_chip/", dirname=output_dir),
-        script = config["scripts"] + "compute_ins_chip.py",
-        peak_file = expand("{dirname}peaks.bed", dirname=output_dir)
+        script = config["scripts"] + "compute_ins_chip.py"
+    params:
+        min_chip = config["ins_chip"]["min_chip_score"]
+        min_peak_hits = config["ins_chip"]["min_peak_hits"]
     output:
         chromvar_dir = directory(expand("{dirname}chromvar/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.chromvar_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} --peak_file={input.peak_file} -o={output.chromvar_dir} 
+        python {input.script} --sc_atac={input.sc_atac} --ins_chi_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
+            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_dir} 
         """
-
+rule chromvar:
+    input:
+        peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
+        chromvar_dir = directory(expand("{dirname}chromvar/", dirname=output_dir))
+    output:
+        deviations = expand("{dirname}chromvar/output/deviations.csv", dirname=output_dir)
+        zs_deviations = expand("{dirname}chromvar/output/deviations_zs.csv", dirname=output_dir)
+    shell:
+        """
+        ml R/4.1.0-foss-2020b
+        Rscript {input.script} {input.peak_file} {input.chromvar_dir}
+        """
 
 # ---- Accessibility Rules ---- #
 rule acc_metric:
