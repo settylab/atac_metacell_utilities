@@ -8,7 +8,8 @@ org <- args[4]
 peaks.file <- args[1]
 
 # Load peaks 
-regions <- read.table(peaks.file, stringsAsFactors=FALSE, header=TRUE)
+regions <- read.table(peaks.file, stringsAsFactors=FALSE, header=FALSE)
+colnames(regions)<-c('chrom', 'chromStart', 'chromEnd', 'summit', 'score', 'name')
 all.regions <- GRanges(regions[,'chrom'], IRanges (regions[,'chromStart'], regions[,'chromEnd']),
 			    score=regions[,'score'], summit=regions[,'summit'], name=regions[,'name'])
 

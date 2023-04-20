@@ -8,14 +8,28 @@ renv_loc: <path/to/user/R/library>
 anndata:
     atac: <path/to/ATAC/AnnData/here>
     rna: <path/to/RNA/AnnData/here>
-    SEACell_label: "SEACell" 
-
+    sc_atac: <path/to/singlecell/ATAC/AnnData/here>
+    sc_ad: <path/to/singlecell/plotting/AnnData/here>
+    
 peaks:
     width: 150
     genome: "hg38"
     meme_file: "data/cis-bp-tf-information.meme"
 
+ins_chip:
+    # set verbose to "--verbose" for True
+    verbose: ""
+    min_chip_score: 0.15
+    min_peak_hits: 30
+
+plot_chromvar:
+    vmax: 3
+    tf_list: <space-separated list of TFs to plot, no quotations>
+    obs_annos: <space-separated list of .obs annotations to plot, no quotations>
+    embedding: "umap"
+
 gene_peak_corr_config:
+    # set test_set to "--test_set" for True
     n_jobs: 1
     test_set: ""
     n_genes: 20

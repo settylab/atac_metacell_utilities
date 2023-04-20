@@ -88,7 +88,8 @@ def build_peak_tf(fimo_scores, peaks_df):
 
 
 def main(args):
-    peaks_df = pd.read_csv(args.peak_file, sep='\t')
+    peaks_df = pd.read_csv(args.peak_file, sep='\t', header=None)
+    peaks_df.columns=['chrom', 'chromStart', 'chromEnd', 'summit', 'score', 'name']
     fimo_scores = args.fimo_res + '/fimo.tsv'
     
     # Build peak x TF AnnData
