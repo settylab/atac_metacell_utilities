@@ -9,8 +9,8 @@ rule all:
     input:
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
         accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
-        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir)
-
+        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
+        plot_dir = expand("{dirname}tf_plots/", dirname=output_dir)
 
 # ---- Genome Download Rule ---- #
 
@@ -126,6 +126,7 @@ rule compute_ins_chip:
         mkdir -p {output.insc_dir}
         python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
         """
+
 rule prep_chromvar:
     input:
         sc_atac = config["anndata"]["sc_atac"],
@@ -142,6 +143,7 @@ rule prep_chromvar:
         python {input.script} --sc_atac={input.sc_atac} --ins_chip_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
             --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir} 
         """
+
 rule chromvar:
     input:
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
@@ -156,6 +158,25 @@ rule chromvar:
         ml R/4.1.0-foss-2020b
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
+        """
+
+rule plot_tfs:
+    input:
+        sc_ad = config["anndata"]["sc_ad"],
+        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
+        script = config["scripts"] + "plot_tfs.py"
+    params:
+        vmax = config["plot_chromvar"]["vmax"],
+        embedding = config["plot_chromvar"]["embedding"],
+        tf_list = config["plot_chromvar"]["tf_list"],
+        obs_annos = config["plot_chromvar"]["obs_annos"]
+    output:
+        plot_dir = directory(expand("{dirname}tf_plots/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {output.plot_dir}
+        python {input.script} --sc_ad={input.sc_ad} --chromvar_outdir={input.chromvar_outdir} --vmax={params.vmax} \\
+            --embedding={params.embedding} --obs_annos {params.obs_annos} --tf_list {params.tf_list} -o={output.plot_dir} 
         """
 
 # ---- Accessibility Rules ---- #
