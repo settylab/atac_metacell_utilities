@@ -1,6 +1,6 @@
 # geneTF
 
-This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline to produce `gene x TF` matrices, representing the regulatory potential of TFs on genes.
+This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline to produce `gene x TF` matrices representing the regulatory potential of TFs on genes, improved chromVAR deviations scores using custom MOTIF annotations, peak accessibility measurements, and more. 
 
 A `snakemake` pipeline is constructed using a set of *rules* with defined inputs and outputs.
 
@@ -95,33 +95,54 @@ config/config.yaml
 
 In order for the pipeline to run, you will have to set the following parameters:
 
-* `atac` *str* : Path to the SEACell-level ATAC AnnData with normalized counts
+* `atac` *str* : Path to the SEACell-level ATAC AnnData with normalized and log-transformed counts
 * `rna` *str* : Path to the SEACell-level RNA AnnData with normalized and log-transformed counts
+* `sc_atac` *str* : Path to the single-cell-level ATAC AnnData with matching peaks to `atac` AnnData. Must have `nFrags` annotation in `.obs`
+* `sc_ad` *str* : Path to the single-cell-level ATAC/RNA AnnData with low-dim embedding and relevant `.obs` annotations for `plot_tfs` rule
 
 **NOTE:** The RNA and ATAC SEACell AnnDatas should have matched/common `obs_names`
+
+*For plotting TFs after running chromVAR:*
+* `tf_list` *list/str* : space-separated list of TFs to plot, no quotations
+* `obs_annos` *list/str* : space-separated list of `sc_ad.obs` annotations to plot, no quotations
 
 ### Optional Parameters:
 For the following parameters, default values can be used
 
+*Peak and genome params:*
 **NOTE:** Make sure the `in_meme` file is appropriate for the chosen `genome`
-
 * `in_meme` *str* : Path to the `.meme` file for FIMO, `default=data/cis-bp-tf-information.meme`
     * The default meme file was created using the script: `workflow/scripts/make_meme.py`
     * Other motif databases, including `CIS-BP_2.00/Homo_sapiens.meme`, can be found at: `/fh/fast/setty_m/grp/motif_databases/`
 * `width` *int* : Number of base pairs to resize ATAC peaks to. The summit will be the midpoint, `default=150`
-* `genome` *str* : Genome to use, will be referenced in the `all_seqs` and `gp_corr` rules, `default=hg38`
+* `genome` *str* : Genome to use, will be referenced in the `all_seqs`, `chromvar`, and `gp_corr` rules, `default=hg38`
     * Currently supported genomes include:  
         * hg38
         * hg19
         * hg18
         * mm9
         * mm10
+
+*In silico ChIP params:*
+* `verbose` *str/flag* : Whether to print info for each TF, `default=""` (False), set to `"--verbose"` for True
+* `min_chip_score` *float* : minimum in silico ChIP score to pass filtering, `default=0.10`
+* `min_peak_hits` *int* : minimum TFs passing in silico ChIP filters, `default=30`
+* `vmax` *int* : vmax for plotting, vmin = -vmax, `default=3`
+* `embedding` *str* : `sc_ad.obsm` field for plotting, `default=umap`
+
+*Gene-Peak correlation params:*
 * `n_jobs` *int* : Number of cores for the `gp_rule`, `default=1`
 * `test_set` *str/flag* : Whether to generate a test set, `default=""` (False), set to `"--test_set"` for True 
 * `n_genes` *int* : number of genes to use in test set, if applicable, `default=20`
 * `min_corr` *float* : minimum gene-peak correlation to pass filtering, `default=0.0`
 * `max_pval` *float* : max p-value for gene-peak correlation to pass filtering, `default=0.1`
 * `min_peaks` *int* : minimum number of significant peaks to pass gene filtering,  `default=2`
+
+*Accessibility metrics params:*
+* `ld_embedding` *str* : `atac.obsm` field for nearest neighbor computation, `default=X_svd`
+* `read_length` *int* : Fragment length, `default=147`
+* `op_nbors` *int* : Number of neighbors for kNN, `default=3`
+* `open_peak_pval` *float* : Nominal p-value cutoff for open peaks, `default=0.01`
 
 
 ### Alternative config specification
@@ -194,13 +215,24 @@ In fact, calling the `all` rule again will only run the rules for which their ou
 snakemake --cores 1 all
 ```
 
-
 For more control, individual rules can also be called:
 
 If you do this, make sure all the input dependencies have already been generated! `-n` can be appended for a dry run to determine if inputs are available.
 
 ```
 snakemake --cores 1 name_of_rule
+```
+
+After modifications of inputs or parameters, you can force a rule to rerun using the `-R` flag:
+```
+snakemake --cores 1 -R name_of_rule
+```
+
+For even more control, the `--allowed-rules` argument can be used to pass a space-separated list of rules that are allowed to run. This is helpful when trying to avoid re-running time-intensive rules such as `fimo` and `gp_corr` when calling `all` or individual rules that get inputs from upstream rules. 
+
+For example, the following will run/re-run the `chromvar` rule any of the allowed rules if necessary. This is useful if you have the `fimo` matrices already computed and do not want to run that rule.
+```
+snakemake --cores 1 chromvar --allowed_rules peak_tf compute_ins_chip prep_chromvar
 ```
 
 
@@ -241,3 +273,7 @@ For the `fimo` and `gene_x_tf rules`, separate log files are created and can be 
 Other log files can be accessed in the `.snakemake/log` directory, although they are not very informative.
 
 *Improved logging is in progress.*
+
+## References
+
+The custom MOTIF annotations are based off of an idea called *in silico ChIP-seq* introduced in [this paper](https://www.biorxiv.org/content/10.1101/2022.06.15.496239v1)
