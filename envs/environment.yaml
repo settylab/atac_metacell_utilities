@@ -11,7 +11,7 @@ dependencies:
   - aiosignal=1.2.0=pyhd8ed1ab_0
   - alabaster=0.7.12=py_0
   - amply=0.1.4=py_0
-  - anndata=0.7.8=py38h578d9bd_1
+  - anndata=0.9.1=pyhd8ed1ab_0
   - appdirs=1.4.4=pyh9f0ad1d_0
   - async-timeout=4.0.2=pyhd8ed1ab_0
   - atk-1.0=2.36.0=h3371d22_4
@@ -29,12 +29,12 @@ dependencies:
   - brotlipy=0.7.0=py38h497a2fe_1003
   - bzip2=1.0.8=h7f98852_4
   - c-ares=1.18.1=h7f98852_0
-  - ca-certificates=2021.10.8=ha878542_0
+  - ca-certificates=2022.12.7=ha878542_0
   - cached-property=1.5.2=hd8ed1ab_1
   - cached_property=1.5.2=pyha770c72_1
   - cachetools=5.0.0=pyhd8ed1ab_0
   - cairo=1.16.0=ha12eb4b_1010
-  - certifi=2021.10.8=py38h578d9bd_1
+  - certifi=2022.12.7=pyhd8ed1ab_0
   - cffi=1.15.0=py38h3931269_0
   - charset-normalizer=2.0.12=pyhd8ed1ab_0
   - coin-or-cbc=2.10.7=h3786ebc_0
@@ -228,10 +228,11 @@ dependencies:
   - retry=0.9.2=py_0
   - rsa=4.8=pyhd8ed1ab_0
   - s3transfer=0.5.2=pyhd8ed1ab_0
-  - scanpy=1.8.2=pyhd8ed1ab_0
+  - scanpy=1.9.3=pyhd8ed1ab_0
   - scikit-learn=1.0.2=py38h1561384_0
   - seaborn=0.11.2=hd8ed1ab_0
   - seaborn-base=0.11.2=pyhd8ed1ab_0
+  - session-info=1.0.0=pyhd8ed1ab_0
   - setuptools=60.10.0=py38h578d9bd_0
   - sinfo=0.3.1=py_0
   - six=1.16.0=pyh6c4a22f_0
@@ -294,8 +295,8 @@ dependencies:
   - zstd=1.5.2=ha95c52a_0
   - pip:
     - cython==0.29.28
-    - 'git+https://github.com/settylab/Palantir@removeTSNE'
+    - git+https://github.com/dpeerlab/Palantir.git
     - scipy==1.6.0
-    - 'git+https://github.com/christinedien/SEACells@integrate_modes'
+    - git+https://github.com/dpeerlab/SEACells
     - texttable==1.6.4
-
+    - xlrd==1.2.0
