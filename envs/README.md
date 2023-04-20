@@ -16,4 +16,6 @@ conda update -c conda-forge anndata scanpy
 ```
 conda install -c conda-forge anndata=0.9.1 scanpy=1.9.1
 ```
-This workflow has been tested to work using `anndata=0.9.1` and `scanpy=1.9.3` in addition to the versions specied in the `environment.yml` file.
+
+
+***NOTE**: The `environment.yaml` file has been updated to use `anndata=0.9.1` and `scanpy=1.9.3`, but has been tested for `v0.7.8` in the past.*
