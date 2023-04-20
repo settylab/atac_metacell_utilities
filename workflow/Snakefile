@@ -7,7 +7,6 @@ output_dir = config["output"]
 # ---- Main Rule ---- #
 rule all:
     input:
-        #gene_peak = expand("{dirname}gp_corrs/", dirname=output_dir),
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
         accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
         chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir)
@@ -125,13 +124,13 @@ rule compute_ins_chip:
     shell:
         """
         mkdir -p {output.insc_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} --verbose={params.verbose}
+        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
         """
 rule prep_chromvar:
     input:
         sc_atac = config["anndata"]["sc_atac"],
         ins_chip_out = expand("{dirname}ins_chip/", dirname=output_dir),
-        script = config["scripts"] + "compute_ins_chip.py"
+        script = config["scripts"] + "prep_chromVAR_files.py"
     params:
         min_chip = config["ins_chip"]["min_chip_score"],
         min_peak_hits = config["ins_chip"]["min_peak_hits"]
@@ -140,19 +139,23 @@ rule prep_chromvar:
     shell:
         """
         mkdir -p {output.chromvar_indir}
-        python {input.script} --sc_atac={input.sc_atac} --ins_chi_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
+        python {input.script} --sc_atac={input.sc_atac} --ins_chip_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
             --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir} 
         """
 rule chromvar:
     input:
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
-        chromvar_indir = expand("{dirname}chromvar_input/", dirname=output_dir)
+        chromvar_indir = expand("{dirname}chromvar_input/", dirname=output_dir),
+        script = config["scripts"] + "run_chromvar.R"
+    params:
+        genome = config["peaks"]["genome"]
     output:
         chromvar_outdir = directory(expand("{dirname}chromvar_output/", dirname=output_dir))
     shell:
         """
         ml R/4.1.0-foss-2020b
-        Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir}
+        mkdir -p {output.chromvar_outdir}
+        Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
         """
 
 # ---- Accessibility Rules ---- #

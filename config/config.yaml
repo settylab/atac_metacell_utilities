@@ -16,11 +16,13 @@ peaks:
     meme_file: "data/cis-bp-tf-information.meme"
 
 ins_chip:
-    verbose: False
+    # set verbose to "--verbose" for True
+    verbose: ""
     min_chip_score: 0.15
     min_peak_hits: 30
 
 gene_peak_corr_config:
+    # set test_set to "--test_set" for True
     n_jobs: 1
     test_set: ""
     n_genes: 20

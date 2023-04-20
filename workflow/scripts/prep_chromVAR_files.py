@@ -52,7 +52,8 @@ if __name__ == "__main__":
 import pandas as pd
 import numpy as np
 import scipy.io
-from scipy.sparse import csr_matrix    
+from scipy.sparse import csr_matrix, issparse  
+import scanpy as sc
     
 def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
     print(f'Filtering for TFs with insilico chip score > {min_chip_score} in at least {min_peak_hits} peaks')
@@ -66,23 +67,23 @@ def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
 def main(args):
     insc_mat = scipy.io.mmread(args.ins_chip_dir + '/ins_chip.mtx')
     tf_names = pd.read_csv(args.ins_chip_dir + '/tf_names.csv')['tf_name']
-    peak_names = pd.read_csv(args.ins_chip_dir + '/tf_names.csv')['peak_name']
+    peak_names = pd.read_csv(args.ins_chip_dir + '/peak_names.csv')['peak_name']
     
     insc_df = pd.DataFrame(insc_mat.A, columns=tf_names, index=peak_names)
     
     binary_mat = filt_and_binarize(insc_df, args.min_chip, args.min_peak_hits)
-    print(f'Filtered {len(args.tf_names)} down to {binary_mat.shape[1]} TFs for chromVAR')
+    print(f'Filtered {len(tf_names)} down to {binary_mat.shape[1]} TFs for chromVAR')
 
     # Binary for chromvar
-    if args.verbose:
-        print(f'writing binary in silico ChIP matrix and TF names...')
+    
+    print(f'writing binary in silico ChIP matrix and TF names...')
     #export binary matrix for chromVAR
     scipy.io.mmwrite(args.outdir +'/bin_ins_chip.mtx', csr_matrix(binary_mat.values))
     # export tf names
     pd.Series(binary_mat.columns).to_csv(args.outdir +'/chromvar_tf_names.csv', index=False, header=['tf_name'])
     
     
-    sc_atac_ad = args.sc_atac
+    sc_atac_ad = sc.read(args.sc_atac)
     sc_atac_ad = sc_atac_ad[:,peak_names]
     
     if ~issparse(sc_atac_ad.X):
@@ -92,7 +93,7 @@ def main(args):
     
     if 'nFrags' not in sc_atac_ad.obs.columns:
         raise KeyError("'nFrags' not in scATAC .obs")    
-    sc_atac_ad.obs['nFrags'].to_csv(args.outdir + '/sc_nfrags.csv', index=True, header=['nFrags']                             
+    sc_atac_ad.obs['nFrags'].to_csv(args.outdir + '/sc_nfrags.csv', index=True, header=['nFrags'])                             
                                  
     
 if __name__ == "__main__":

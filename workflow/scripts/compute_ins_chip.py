@@ -54,6 +54,7 @@ import numpy as np
 import scipy.io
 from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
+import scanpy as sc
 
 import numba as nb
 import os
