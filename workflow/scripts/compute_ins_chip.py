@@ -1,6 +1,6 @@
 if __name__ == "__main__":
     import argparse
-    desc = "Computes in silico ChIP matrix"
+    desc = "Computes tf-peak correlations and in silico ChIP matrix"
     
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -41,7 +41,7 @@ if __name__ == "__main__":
     
     parser.add_argument(
         "--verbose",
-        help="Whether to print out progress statements",
+        help="Whether to print out info about each TF",
         action="store_true"
     
     )
@@ -81,6 +81,7 @@ def mean1(a):
         b[i] = a[i].mean()
     return b
 
+
 @nb.njit
 def std1(a):
     n = len(a)
@@ -88,6 +89,7 @@ def std1(a):
     for i in range(n):
         b[i] = a[i].std()
     return b
+
 
 @nb.njit
 def c(a, b):
@@ -104,6 +106,7 @@ def c(a, b):
         out[i] =  np.dot((a - mu_a),(b[i] - mu_b[i]))  / k / sig_a / sig_b[i]
 
     return out
+
 
 def compute_corrs(tf_set, rna_mat, atac_mat, fimo_mat, verbose=True):
     corr_mat = pd.DataFrame(0.0, columns=tf_set, index=atac_mat.columns)
@@ -123,16 +126,15 @@ def compute_corrs(tf_set, rna_mat, atac_mat, fimo_mat, verbose=True):
     
     return corr_mat
 
-def compute_ins_mat(tf_set, corr_mat, atac_mat, fimo_mat, verbose=True):
 
+def compute_ins_mat(tf_set, corr_mat, atac_mat, fimo_mat, verbose=True):
     final_out = pd.DataFrame(0.0,index=atac_mat.columns, columns=tf_set)
     for tf in tqdm(tf_set,total=len(tf_set)):
         pos_peaks = corr_mat.index[corr_mat[tf] > 0]
 
         if verbose:
             print(f'{tf}: {len(pos_peaks)} pos corr peaks')
-            print('Computing in silico chip score...')
-            
+    
         max_acc = atac_mat[pos_peaks].max(axis=0)
         
         corr_score = corr_mat.loc[pos_peaks,tf]
@@ -165,7 +167,7 @@ def main(args):
     gene_set = rna_ad.var_names
     peak_x_tf = filter_gene(peak_x_tf, gene_set)
 
-    # grab matricies from anndatas
+    # grab matrices from anndatas
     rna_mat = rna_ad.to_df()
     atac_mat = atac_ad.to_df()
     fimo_mat = peak_x_tf.to_df()
@@ -173,7 +175,9 @@ def main(args):
     all_tfs = fimo_mat.columns
     
     # compute correlation and in silico chip matrix
+    print('computing correlations...')
     corr_mat = compute_corrs(all_tfs,rna_mat, atac_mat, fimo_mat, verbose=args.verbose)
+    print('Computing in silico chip score...')
     insc_mat = compute_ins_mat(all_tfs, corr_mat, atac_mat, fimo_mat, verbose=args.verbose)
     
     ## EXPORT DATA ##
@@ -181,26 +185,21 @@ def main(args):
         os.mkdir(args.outdir)
     
     # correlation matrix
+    print(f'writing tf-peak correlations to {corr_outfile}...')
     corr_outfile = args.outdir +'/tf_peak_corrs.mtx'
-    if args.verbose:
-        print(f'writing tf-peak correlations to {corr_outfile}...')
     scipy.io.mmwrite(corr_outfile, csr_matrix(insc_mat.values), )    
     
     # in silico ChIP matrices
+    print(f'writing in silico ChIP matrix to {ins_outfile}...')
     ins_outfile = args.outdir +'/ins_chip.mtx'
-    if args.verbose:
-        print(f'writing in silico ChIP matrix to {ins_outfile}...')
     scipy.io.mmwrite(ins_outfile, csr_matrix(insc_mat.values), )
     
-    if args.verbose:
-        print(f'saving metadata...')
     # TF and peak list
+    print(f'saving metadata...')
     pd.Series(all_tfs).to_csv(args.outdir +'/tf_names.csv', index=False, header=['tf_name'])
     pd.Series(atac_mat.columns).to_csv(args.outdir +'/peak_names.csv', index=False, header=['peak_name'])
-    
-    
-    if args.verbose:
-        print('Completed!')
+       
+    print('Completed!')
     
     
 if __name__ == "__main__":

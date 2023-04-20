@@ -96,10 +96,12 @@ def main(args):
             if len(not_valid) != 0:
                 print(f'Following TFs not in chromVAR output: {not_valid}')            
             
-            sc.pl.embedding(cv_ad, basis=args.embedding, color=tfs_plot, layer='z-scored', vmin=(-1 * args.vmax), vmax=args.vmax, cmap='RdBu_r', show=False)
+            sc.pl.embedding(cv_ad, basis=args.embedding, color=tfs_plot, layer='z-scored', vmin=(-1 * args.vmax), vmax=args.vmax, 
+                            cmap='RdBu_r', show=False, frameon=False)
             plt.savefig(f'{args.outdir}/tfs_zs.png', bbox_inches='tight', dpi=300)
 
-            sc.pl.embedding(cv_ad, basis=args.embedding, color=tfs_plot, vmin=(-1 * args.vmax), vmax=args.vmax, cmap='RdBu_r', show=False)
+            sc.pl.embedding(cv_ad, basis=args.embedding, color=tfs_plot, vmin=(-1 * args.vmax), vmax=args.vmax, 
+                            cmap='RdBu_r', show=False, frameon=False)
             plt.savefig(f'{args.outdir}/tfs.png', bbox_inches='tight', dpi=300)        
         
         else:
@@ -110,5 +112,6 @@ def main(args):
         sc.pl.embedding(cv_ad, basis=args.embedding, color=annos_plot, frameon=False, show=False) 
         plt.savefig(f'{args.outdir}/annotated.png', bbox_inches='tight', dpi=300)
                                  
+
 if __name__ == "__main__":
     main(args)

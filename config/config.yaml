@@ -24,8 +24,8 @@ ins_chip:
 
 plot_chromvar:
     vmax: 3
-    tf_list: <space-separated list of TFs to plot, each one a string>
-    obs_annos: <space-separated list of .obs annotations to plot, each one a string>
+    tf_list: <space-separated list of TFs to plot, no quotations>
+    obs_annos: <space-separated list of .obs annotations to plot, no quotations>
     embedding: "umap"
 
 gene_peak_corr_config:

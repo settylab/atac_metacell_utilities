@@ -1,6 +1,6 @@
 if __name__ == "__main__":
     import argparse
-    desc = "Filters and binarizes chip matrix for chromvar"
+    desc = "Filters and binarizes chip matrix and saves other files for chromvar"
     
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -54,7 +54,8 @@ import numpy as np
 import scipy.io
 from scipy.sparse import csr_matrix, issparse  
 import scanpy as sc
-    
+
+
 def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
     print(f'Filtering for TFs with insilico chip score > {min_chip_score} in at least {min_peak_hits} peaks')
     ins_chip_mat[ins_chip_mat <= min_chip_score] = 0.0
@@ -89,10 +90,7 @@ def main(args):
     if ~issparse(sc_atac_ad.X):
         sc_atac_ad.X = csr_matrix(sc_atac_ad.X)
     
-    scipy.io.mmwrite(args.outdir +'/sc_atac_counts.mtx', sc_atac_ad.X)
-    
-    if 'nFrags' not in sc_atac_ad.obs.columns:
-        raise KeyError("'nFrags' not in scATAC .obs")    
+    scipy.io.mmwrite(args.outdir +'/sc_atac_counts.mtx', sc_atac_ad.X)  
     sc_atac_ad.obs['nFrags'].to_csv(args.outdir + '/sc_nfrags.csv', index=True, header=['nFrags'])                             
                                  
     
