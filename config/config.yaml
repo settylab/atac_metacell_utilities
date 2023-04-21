@@ -6,11 +6,12 @@ interactive_clean: True
 renv_loc: <path/to/user/R/library>
 
 anndata:
-    atac: <path/to/ATAC/AnnData/here>
-    rna: <path/to/RNA/AnnData/here>
+    atac: <path/to/SEACell/ATAC/AnnData/here>
+    rna: <path/to/SEACell/RNA/AnnData/here>
     sc_atac: <path/to/singlecell/ATAC/AnnData/here>
     sc_ad: <path/to/singlecell/plotting/AnnData/here>
-    
+    # documenting what label was used to create the SEACells AnnData
+    SEACell_label: "SEACell"    
 peaks:
     width: 150
     genome: "hg38"
