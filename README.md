@@ -27,10 +27,11 @@ We also rely on some packages through `module load` system provide by SciComp. S
 1. `Anaconda3/2020.02`
     * This is just to allow the use of `conda`, free to use whatever version you like
 2. `R/4.1.0-foss-2020b`
-    * This is the version of R used throughout the pipeline. If you wish to use a different R version / installation, modify the following rules:
+    * This is the version of R used throughout the pipeline. If you wish to use a different R version / installation, modify the `renv.lock` file and the following rules:
         * `renv_install`
         * `renv_init_restore`
         * `all_seqs`
+    * The `renv.lock` file will also prove to have problems if you change the R-version...
 3. `MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4`
     * This includes the `fimo` tool used to find MOTIFs. If you wish to use your own installation of the MEME Suite, modifcy the following rule:
         * `fimo`
