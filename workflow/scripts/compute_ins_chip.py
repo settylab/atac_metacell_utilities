@@ -187,7 +187,7 @@ def main(args):
     # correlation matrix
     print(f'writing tf-peak correlations to {corr_outfile}...')
     corr_outfile = args.outdir +'/tf_peak_corrs.mtx'
-    scipy.io.mmwrite(corr_outfile, csr_matrix(insc_mat.values), )    
+    scipy.io.mmwrite(corr_outfile, csr_matrix(corr_mat.values), )    
     
     # in silico ChIP matrices
     print(f'writing in silico ChIP matrix to {ins_outfile}...')
