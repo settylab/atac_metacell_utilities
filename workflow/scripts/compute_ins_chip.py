@@ -185,13 +185,13 @@ def main(args):
         os.mkdir(args.outdir)
     
     # correlation matrix
-    print(f'writing tf-peak correlations to {corr_outfile}...')
     corr_outfile = args.outdir +'/tf_peak_corrs.mtx'
+    print(f'writing tf-peak correlations to {corr_outfile}...')
     scipy.io.mmwrite(corr_outfile, csr_matrix(corr_mat.values), )    
     
     # in silico ChIP matrices
-    print(f'writing in silico ChIP matrix to {ins_outfile}...')
     ins_outfile = args.outdir +'/ins_chip.mtx'
+    print(f'writing in silico ChIP matrix to {ins_outfile}...')
     scipy.io.mmwrite(ins_outfile, csr_matrix(insc_mat.values), )
     
     # TF and peak list
