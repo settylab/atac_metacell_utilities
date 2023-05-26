@@ -75,6 +75,7 @@ rule fimo:
         """
         ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
         fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
+        rm output.fimo_dir/cisml.xml
         """
 
 rule peak_tf:
