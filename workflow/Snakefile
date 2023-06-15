@@ -160,51 +160,6 @@ rule chromvar:
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
         """
-
-rule plot_tfs:
-    input:
-        sc_ad = config["anndata"]["sc_ad"],
-        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
-        script = config["scripts"] + "plot_tfs.py"
-    params:
-        vmax = config["plot_chromvar"]["vmax"],
-        embedding = config["plot_chromvar"]["embedding"],
-        tf_list = config["plot_chromvar"]["tf_list"],
-        obs_annos = config["plot_chromvar"]["obs_annos"]
-    output:
-        plot_dir = directory(expand("{dirname}tf_plots/", dirname=output_dir))
-    shell:
-        """
-        mkdir -p {output.plot_dir}
-        python {input.script} --sc_ad={input.sc_ad} --chromvar_outdir={input.chromvar_outdir} --vmax={params.vmax} \\
-            --embedding={params.embedding} --obs_annos {params.obs_annos} --tf_list {params.tf_list} -o={output.plot_dir} 
-        """
-
-# ---- Accessibility Rules ---- #
-rule acc_metric:
-    input:
-        atac = config["anndata"]["atac"],
-        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
-        script = config["scripts"] + "acc_metrics.py",
-    params:
-        embedding = config["acc_metric"]["ld_embedding"],
-        read_len = config["acc_metric"]["read_length"],
-        n_nbors = config["acc_metric"]["op_nbors"],
-        op_pval = config["acc_metric"]["open_peak_pval"],
-        gp_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
-        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
-    output:
-        acc_dir = directory(expand("{dirname}accessibility/", dirname=output_dir))
-    shell:
-        """
-        mkdir -p {output.acc_dir}
-        python {input.script}  --atac={input.atac} --gp_corr={input.gp_dir} -o={output.acc_dir} \\
-             --embedding={params.embedding} --read_len={params.read_len} --n_nbors={params.n_nbors} \\
-             --op_pval={params.op_pval} --gp_pval={params.gp_pval} --min_corr={params.min_corr} \\
-             --min_peaks={params.min_peaks}
-        """
-
 # ---- Computation Rule ---- #
 
 rule gene_x_tf:
