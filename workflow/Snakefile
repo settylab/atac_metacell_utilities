@@ -3,7 +3,7 @@ import os
 configfile: "config/config.yaml"
 
 output_dir = config["output"]
-
+fimo_on=config["fimo"]
 # ---- Main Rule ---- #
 rule all:
     input:
@@ -63,6 +63,7 @@ rule all_seqs:
         ml R/4.1.0-foss-2020b
         Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
         """
+
 rule fimo:
     input:
         meme = config["peaks"]["meme_file"],

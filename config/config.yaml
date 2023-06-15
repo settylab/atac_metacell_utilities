@@ -2,14 +2,14 @@ scripts: "workflow/scripts/"
 output: "results/"
 logs: "logs/"
 interactive_clean: True
-
+fimo: False
 renv_loc: <path/to/user/R/library>
 
 anndata:
-    atac: <path/to/SEACell/ATAC/AnnData/here>
-    rna: <path/to/SEACell/RNA/AnnData/here>
-    sc_atac: <path/to/singlecell/ATAC/AnnData/here>
-    sc_ad: <path/to/singlecell/plotting/AnnData/here>
+    atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_atac_SEACells_meta.h5ad"
+    rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_rna_SEACells_meta.h5ad"
+    sc_atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_multiome_atac.h5ad"
+    sc_ad: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_multiome_rna.h5ad"
     # documenting what label was used to create the SEACells AnnData
     SEACell_label: "SEACell"    
 peaks:
