@@ -21,31 +21,19 @@ Three versions of the `gene x TF` matrix are produced, each with a different pro
 ## Environment Setup
 In order to run this pipeline, certain python and R packages need to be installed. Importantly, the `environment.yaml`/`requirements.txt` files include the `snakemake` package.
 
-### Modules
-We also rely on some packages through `module load` system provide by SciComp. Specifically:
+### Dependencies
+Before creating the environment, make sure the following dependencies are installed.
 
-1. `Anaconda3/2020.02`
-    * This is just to allow the use of `conda`, free to use whatever version you like
-2. `R/4.1.0-foss-2020b`
-    * This is the version of R used throughout the pipeline. If you wish to use a different R version / installation, modify the `renv.lock` file and the following rules:
-        * `renv_install`
-        * `renv_init_restore`
-        * `all_seqs`
-    * The `renv.lock` file will also prove to have problems if you change the R-version...
-3. `MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4`
-    * This includes the `fimo` tool used to find MOTIFs. If you wish to use your own installation of the MEME Suite, modifcy the following rule:
-        * `fimo`
+1. `conda`
+    * Conda is required for managing environments, whether you chose to create the environment using conda or pip.
+2. `R 4.1.0`
+    * This is the version of R used throughout the pipeline. If you wish to use a different R version / installation, modify the `renv.lock` file and the R version in `config.yaml`
+3. `MEME 5.1.1`
+    * This includes the `fimo` tool used to find TF motifs. If you wish to use your own installation of the MEME Suite, update the MEME version in `config.yaml`
 
 ### Python Modules
-1. Load Anaconda:
 
-```
-module load Anaconda3/2020.02
-```
-
-2. Create the conda environment 
-
-There are two options, using `pip` vs using `conda`
+There are two options, using `conda` or using `pip`.
 
 With `conda`:
 
@@ -102,10 +90,6 @@ In order for the pipeline to run, you will have to set the following parameters:
 * `sc_ad` *str* : Path to the single-cell-level ATAC/RNA AnnData with low-dim embedding and relevant `.obs` annotations for `plot_tfs` rule
 
 **NOTE:** The RNA and ATAC SEACell AnnDatas should have matched/common `obs_names`
-
-*For plotting TFs after running chromVAR:*
-* `tf_list` *list/str* : space-separated list of TFs to plot, no quotations
-* `obs_annos` *list/str* : space-separated list of `sc_ad.obs` annotations to plot, no quotations
 
 ### Optional Parameters:
 For the following parameters, default values can be used

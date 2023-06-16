@@ -11,7 +11,14 @@ rule all:
         accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
         chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
         plot_dir = expand("{dirname}tf_plots/", dirname=output_dir)
-
+# ---- Requirement Checking Rule ---- #
+rule check_dependencies:
+    input:
+        script = config["scripts"] + "check_dependencies.py"
+        meme_version = config["meme"]["version"]
+        r_version = config["r"]["version"]
+    shell:
+        "python {input.script} "MEME,R", f"{meme_version},{r_version}" "
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -24,14 +31,12 @@ rule renv_install:
         libloc = config['renv_loc']
     shell:
         """
-        ml R/4.1.0-foss-2020b
         Rscript workflow/scripts/install_renv.R {input.libloc}
         """
 
 rule renv_init_restore:
     shell:
         """
-        ml R/4.1.0-foss-2020b
         R -e 'renv::init(bare=TRUE)'
         R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
         """
@@ -60,7 +65,6 @@ rule all_seqs:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
         """
-        ml R/4.1.0-foss-2020b
         Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
         """
 rule fimo:
@@ -73,7 +77,6 @@ rule fimo:
         out = config["logs"] + "fimo.out"
     shell:
         """
-        ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
         fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
         rm output.fimo_dir/cisml.xml
         """
@@ -156,7 +159,6 @@ rule chromvar:
         chromvar_outdir = directory(expand("{dirname}chromvar_output/", dirname=output_dir))
     shell:
         """
-        ml R/4.1.0-foss-2020b
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
         """
