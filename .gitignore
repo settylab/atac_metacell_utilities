@@ -2,3 +2,11 @@
 .snakemake
 ._dag.png
 .DS_Store
+**/__pycache__/
+*.py[cod]
+renv/cellar/
+renv/library/
+renv/local/
+renv/lock/
+renv/python/
+renv/staging/
