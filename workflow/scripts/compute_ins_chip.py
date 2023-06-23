@@ -55,7 +55,7 @@ import scipy.io
 from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
 import scanpy as sc
-
+from anndata import AnnData
 import numba as nb
 import os
 
@@ -194,11 +194,13 @@ def main(args):
     print(f'writing in silico ChIP matrix to {ins_outfile}...')
     scipy.io.mmwrite(ins_outfile, csr_matrix(insc_mat.values), )
     
+
     # TF and peak list
     print(f'saving metadata...')
     pd.Series(all_tfs).to_csv(args.outdir +'/tf_names.csv', index=False, header=['tf_name'])
     pd.Series(atac_mat.columns).to_csv(args.outdir +'/peak_names.csv', index=False, header=['peak_name'])
        
+
     print('Completed!')
     
     

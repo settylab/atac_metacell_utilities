@@ -23,11 +23,11 @@ if __name__ == "__main__":
     )
     
     parser.add_argument(
-        "--peak_tf",
+        "--ins_chip",
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to peak x TF AnnData",
+        help="Path to in-silico ChIP AnnData",
     )
     
     parser.add_argument(
@@ -78,6 +78,7 @@ import numpy as np
 import scanpy as sc
 import pickle
 from tqdm.auto import tqdm
+from anndata import AnnData
     
 def write_pickle(file_path, obj):    
     with open(file_path, 'wb') as handle:
@@ -194,7 +195,8 @@ def main(args):
     # Load data
     atac_ad = sc.read(args.atac)
     rna_ad = sc.read(args.rna)
-    peak_x_tf = sc.read(args.peak_tf)
+    peak_x_tf_df = pd.DataFrame(atac_ad.varm["in_silico_ChIP"], index = atac_ad.var_names,  atac_ad.uns['in_silico_ChIP_columns'])
+    peak_x_tf = anndata.AnnData(peak_x_tf_df)
     
     with open(args.gp_corr + "/gp_corr.pickle", 'rb') as handle:
         gene_peak = pickle.load(handle)

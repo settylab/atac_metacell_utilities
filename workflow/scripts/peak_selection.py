@@ -11,21 +11,21 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
+        help="Path to ATAC single cell AnnData, common obs with RNA",
     )
-        parser.add_argument(
+    parser.add_argument(
         "--rna",
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to RNA MC AnnData, common obs with ATAC",
+        help="Path to RNA single cell AnnData, common obs with ATAC",
     )
     parser.add_argument(
         "--target",
-        metavar="str"
-        type=tuple,
+        metavar="str",
+        type=str,
         required=True,
-        help="Tuple of target lineage and target cell type",
+        help="JSON array of target lineage and target cell type to convert to list",
     )
     parser.add_argument(
         "--start",
@@ -35,33 +35,33 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--reference",
-        metavar="str"
-        type=dict,
+        metavar="str",
+        type=str,
         required=True,
-        help="Dictionary with reference lineages as keys and associated cell type as values",
+        help="JSON formatted string with reference lineages as keys and associated cell type as values to convert to dictionary",
     )
     parser.add_argument(
         "--min_logFC",
         type=float,
-        default=-0.25
+        default=-0.25,
         help="Float value of minimum logFC threshold for target lineage specific peaks",
     )
     parser.add_argument(
         "--max_logFC",
         type=float,
-        default=0.25
+        default=0.25,
         help="Float value of max logFC threshold for reference lineages",
     )
     parser.add_argument(
         "--max_pval",
         type=float,
-        default=0.1
+        default=0.1,
         help="Float value of max p-value threshold for gene-peak correlations",
     )
     parser.add_argument(
         "--min_corr",
         type=float,
-        default=0.0
+        default=0.0,
         help="Float value of minimum correlation coefficient for gene-peak correlations",
     )
 
@@ -70,17 +70,18 @@ if __name__ == "__main__":
 
 import scanpy as sc
 import numpy as np
-
+import json
 
 
 def main(args):
+    print(args)
     atac_ad = sc.read_h5ad(args.atac)
     rna_ad = sc.read_h5ad(args.rna)
     #set target lineage and cell type
-    target = args.target 
+    target = json.loads(args.target) 
     target_lineage = target[0]
     target_celltype = target[1]
-    ref_lineages = args.reference
+    ref_lineages = json.loads(args.reference)
     start_celltype = args.start
     #set filtering parameters
     min_logFC = args.min_logFC
@@ -95,11 +96,6 @@ def main(args):
     for ref_lineage in ref_lineages.keys():
         ref_celltype = ref_lineages[ref_lineage]
         #differential accessibility compared to target cell type
-        diff_peaks[ref_lineage] = pd.read_csv(data_dir + f"{ref_celltype}_{target_celltype}_diff_acc.tsv", sep = "\t")
-        diff_peaks[ref_lineage].index = pd.Index(diff_peaks[ref_lineage]['feature'].values, name = 'index')
-        #Differential accessibility results compared to starting cell type 
-        start_peaks[ref_lineage] = pd.read_csv(data_dir + f"{ref_celltype}_{start_celltype}_diff_acc.tsv", sep = "\t")
-        start_peaks[ref_lineage].index = start_peaks[ref_lineage]['feature']
 
     #select list of peaks which are positively correlated with gene expression and meet p value criteria
     correlated_peaks = pd.Series()
@@ -127,7 +123,7 @@ def main(args):
     #create set of unique peaksm which 
     unique_peaks = dict()
     unique_peaks[target_lineage] = pd.DataFrame()
-    for ref_lineage in diff_peaks.keys()
+    for ref_lineage in diff_peaks.keys():
         unique_peaks[target_lineage] = pd.concat([unique_peaks[target_lineage], diff_peaks[ref_lineage]]).sort_values("logFC", ascending = False).drop_duplicates('feature')
 
     #use Open peaks matrix to determine priming status - primed if open in HSCs, lineage specific if not

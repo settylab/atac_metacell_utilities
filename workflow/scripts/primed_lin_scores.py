@@ -40,6 +40,7 @@ if __name__ == "__main__":
 import scanpy as sc
 import numpy as np
 from tqdm.auto import tqdm
+from scipy import sparse
 
 def filter_gp_corrs(gp_corrs, gene_list, peak_df, min_cor, max_pval):
     filtered_gp_corrs = dict()
@@ -94,8 +95,8 @@ def main(args):
     control_genes = rna_ad[:, rna_ad.var['control_genes']].index
     unique_peaks = atac_ad.var.loc[rna_ad.var[f'{target_lineage}_unique_peaks'], ['primed', 'lineage_specific']]
 
-    rna_ad.uns['filtered_gp_corrs'] = filter_gp_corrs(gene_peak_corrs, target_genes, unique_peaks, args.min_cor, args.max_pval)
-    rna_ad.uns['control_gp_corrs'] = filter_gp_corrs(gene_peak_corrs, control_genes, unique_peaks, args.min_cor, args.max_pval)
+    atac_ad.uns['filtered_gp_corrs'] = filter_gp_corrs(gene_peak_corrs, target_genes, unique_peaks, args.min_cor, args.max_pval)
+    atac_ad.uns['control_gp_corrs'] = filter_gp_corrs(gene_peak_corrs, control_genes, unique_peaks, args.min_cor, args.max_pval)
 
     imputed_peak_matrix = dict()
     for key in ['primed', 'lineage_specific']:
@@ -108,6 +109,13 @@ def main(args):
             _concat_imputed_peak_values(atac_ad, imputed_peak_matrix[key], rna_ad.uns['control_gp_corrs'])
         #remove duplicates
         imputed_peak_matrix[key] = imputed_peak_matrix[key].T.drop_duplicates().T
+    atac_ad.var['primed'] = pd.Series(0, index = atac_ad.var_names)
+    atac_ad.var['lineage_specific'] = pd.Series(0, index = atac_ad.var_names)
+    for gene in rna_ad.uns['filtered_gp_corrs']:
+        index = rna_ad.uns['filtered_gp_corrs'][rna_ad.uns['filtered_gp_corrs']['category'] == "primed"].index
+        atac_ad.var.loc[index, "primed"] = 1
+        index = rna_ad.uns['filtered_gp_corrs'][rna_ad.uns['filtered_gp_corrs']['category'] == "lineage_specifc"].index
+        atac_ad.var.loc[index, "lineage_specific"] = 1
         
     # weighted average
     atac_gene_dfs = dict()
@@ -123,9 +131,10 @@ def main(args):
             _concat_weighted_peak_avg(atac_gene_dfs[key], imputed_peak_matrix[key], rna_ad.uns['control_gp_corrs'], gene)
         atac_gene_dfs[key] = atac_gene_dfs[key].fillna('0', axis = 1)  
     for key in atac_gene_dfs.key():
-        atac_ad.varm[f'{key}_gene_scores'] = atac_gene_dfs[key].values
-        atac_ad.uns[f'{key}_gene_scores_columns'] = atac_gene_dfs[key].columns
-    
+        gene_scores = pd.DataFrame(0.0, index = rna_ad.obs_names, columns = rna_ad.var_names)
+        gene_scores.loc[:,atac_gene_dfs[key].columns] = atac_gene_dfs[key].values
+        rna_ad.layers[f'{key}_scores'] = sparse.csr_matrix(gene_scores.values)
+    rna_ad.write(args.rna)
     atac_ad.write(args.atac)
     
 if __name__ == "__main__":
