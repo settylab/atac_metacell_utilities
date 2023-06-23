@@ -8,17 +8,7 @@ output_dir = config["output"]
 rule all:
     input:
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
-        accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
         chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
-        plot_dir = expand("{dirname}tf_plots/", dirname=output_dir)
-# ---- Requirement Checking Rule ---- #
-rule check_dependencies:
-    input:
-        script = config["scripts"] + "check_dependencies.py"
-        meme_version = config["meme"]["version"]
-        r_version = config["r"]["version"]
-    shell:
-        "python {input.script} "MEME,R", f"{meme_version},{r_version}" "
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -130,7 +120,20 @@ rule compute_ins_chip:
         mkdir -p {output.insc_dir}
         python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
         """
-
+rule write_ins_chip:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "write_ins_chip.py",
+        data_dir =output_dir + "ins_chip/"
+    params:
+        verbose = config["ins_chip"]["verbose"],
+    output:
+        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
+    shell:
+        """
+        python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir} 
+        """
 rule prep_chromvar:
     input:
         sc_atac = config["anndata"]["sc_atac"],
@@ -150,9 +153,11 @@ rule prep_chromvar:
 
 rule chromvar:
     input:
+        atac = config["anndata"]["sc_atac"],
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
         chromvar_indir = expand("{dirname}chromvar_input/", dirname=output_dir),
-        script = config["scripts"] + "run_chromvar.R"
+        script = config["scripts"] + "run_chromvar.R",
+        pyscript = config["scripts"] + "run_chromvar.py"
     params:
         genome = config["peaks"]["genome"]
     output:
@@ -161,6 +166,7 @@ rule chromvar:
         """
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
+        python {input.pyscript} --atac {input.atac} --out {output.chromvar_outdir}
         """
 # ---- Computation Rule ---- #
 
@@ -168,7 +174,7 @@ rule gene_x_tf:
     input:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
-        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        ins_chip = expand("{dirname}ins_chip/ins_chip.h5ad", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
@@ -182,9 +188,43 @@ rule gene_x_tf:
     shell:
         """
         mkdir -p {output.gtf_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \\
+        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={params.ins_chip}  \\
             --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
             --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
+        """
+# ---- Peak Selection Rule --- #
+rule peak_selection:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "peak_selection.py"
+    params:
+        target = config["peak_selection"]["target"],
+        start = config["peak_selection"]["start"],
+        reference = config["peak_selection"]["reference"],
+        min_logFC = config["peak_selection"]["min_logFC"],
+        max_logFC = config["peak_selection"]["max_logFC"],
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+    shell:
+        """
+        python {input.script} --atac={input.atac} --rna={input.rna} --target={params.target} --start={params.start} --reference={params.reference}  --min_corr={params.min_corr} --max_pval={params.max_pval} --min_logFC={params.min_logFC} --max_logFC={params.max_logFC}
+        """
+  
+# --- Weighted average scoring rule --- #
+
+rule weighted_average_scores:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "primed_lin_scores.py"
+    params:
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+
+    shell:
+        """
+        python {input.script} --atac={input.atac} --rna={input.rna} --min_corr={params.min_corr} --max_pval={params.max_pval}
         """
 
 # ---- Cleaning Rule ---- #

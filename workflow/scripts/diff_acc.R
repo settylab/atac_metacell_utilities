@@ -16,10 +16,10 @@ to_compare = strsplit(to_compare, ';')
 for (i in len(to_compare)){
     to_compare[i] = strsplit(to_compare[i], ",")
 }
-atac_metadata <- fread('/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/meta_atac_metadata.csv')
+atac_metadata <- fread(paste(c(data_dir, 'meta_atac_metadata.csv')))
 
-peak_names <- fread('/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/meta_atac_peaks.csv')
-metacell_mtx <- readMM('/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/meta_atac_X.mtx')
+peak_names <- fread(paste(c(data_dir, 'meta_atac_peaks.csv')))
+metacell_mtx <- readMM(paste(c(data_dir, 'meta_atac_X.mtx')))
 # No user input below this line
 #####################################
 peak_names <- unlist(peak_names$V2)
@@ -78,14 +78,14 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
       .[is.na(logFC),c("logFC","padj_fdr"):=list(0,1)] %>%
       setorder(padj_fdr, na.last=T)
 
-    fwrite(out, sprintf("/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/%s_%s_diff_acc.tsv", to_compare[1], to_compare[2]), sep="\t", na="NA", quote=F)
+    fwrite(out, sprintf("%s%s_%s_diff_acc.tsv", data_dir, to_compare[1], to_compare[2]), sep="\t", na="NA", quote=F)
 
 
     sigA_peaks <- out[out$logFC <= -1.25 & out$padj_fdr <=0.01,"feature"] %>% unlist()
     sigB_peaks <- out[out$logFC >= 1.25 & out$padj_fdr <=0.01,"feature"]  %>% unlist()
 
 
-    pdf(file=sprintf("/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/%s_%s_MA.pdf",to_compare[1], to_compare[2]))
+    pdf(file=sprintf("%s%s_%s_MA.pdf", data_dir, to_compare[1], to_compare[2]))
 
     with(lrt$table, plot(logCPM,logFC,pch=16,cex=0.2, col="gray"))
 
