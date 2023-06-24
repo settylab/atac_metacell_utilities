@@ -3,15 +3,15 @@ output: "results/"
 logs: "logs/"
 interactive_clean: True
 
-renv_loc: <path/to/user/R/library>
+renv_loc: "/home/cjordan2/R/x86_64-pc-linux-gnu-library/4.1.0" # <path/to/user/R/library>
 
 anndata:
-    atac: <path/to/SEACell/ATAC/AnnData/here>
-    rna: <path/to/SEACell/RNA/AnnData/here>
-    sc_atac: <path/to/singlecell/ATAC/AnnData/here>
-    sc_ad: <path/to/singlecell/plotting/AnnData/here>
+    atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_atac_w_SEACells_meta.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_atac_meta_ad.h5ad"  #<<path/to/SEACell/ATAC/AnnData/here>
+    rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_rna_w_SEACells_meta.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_meta_ad.h5ad" #<path/to/SEACell/RNA/AnnData/here>
+    sc_atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_atac_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_atac_ad.h5ad" 
+    sc_rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_rna_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_ad.h5ad" 
     # documenting what label was used to create the SEACells AnnData
-    SEACell_label: "SEACell"    
+    SEACell_label: "SEACell"
 peaks:
     width: 150
     genome: "hg38"
@@ -33,13 +33,17 @@ gene_peak_corr_cutoffs:
     min_corr: 0.0
     max_pval: 0.1
     min_peaks: 2
-
-acc_metric:
-    ld_embedding: "X_svd"
-    read_length: 147
-    op_nbors: 3
-    open_peak_pval: 0.01
-meme:
-    version: "5.1.1"
-r:
-    version: "4.1.0"
+    
+diff_acc:
+    to_compare: "EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
+    group_variable: "celltype_combined"
+    
+peak_selection:
+    target: ["Bcells","proB"]
+    start: "HSC"
+    reference: 
+         Ery: "EryPre1"
+         Mono: "Mono"
+    min_logFC: -0.25
+    max_logFC: 0.25
+    

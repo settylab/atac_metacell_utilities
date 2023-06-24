@@ -4,22 +4,23 @@ library(Matrix)
 library(SummarizedExperiment)
 library(edgeR)
 args = commandArgs(trailingOnly=TRUE)
-if length(args) != 3{
+if (length(args) < 3){
     stop("Please supply the directory containing the required data files, cell type variable name, and a vector of tuples of cell types to compare")
+} else {
+    data_dir <- args[1] #'celltype_combined'
+    to_compare <- args[2]  #c("Mono",  'HSC')
+    group_variable <- args[3]
 }
-else{
-    data_dir <- args[1]
-    group_variable <- args[2] #'celltype_combined'
-    to_compare <- args[3]  #c("Mono",  'HSC')
-}
-to_compare = strsplit(to_compare, ';')
-for (i in len(to_compare)){
-    to_compare[i] = strsplit(to_compare[i], ",")
-}
-atac_metadata <- fread(paste(c(data_dir, 'meta_atac_metadata.csv')))
+to_compare = strsplit(to_compare, as.character('/'))[[1]]
+to_compare = strsplit(to_compare, as.character(','), fixed = TRUE)
 
-peak_names <- fread(paste(c(data_dir, 'meta_atac_peaks.csv')))
-metacell_mtx <- readMM(paste(c(data_dir, 'meta_atac_X.mtx')))
+print(to_compare)
+fname <- paste(data_dir, 'meta_atac_metadata.csv',  sep = "")
+print(fname)
+atac_metadata <- fread(paste(data_dir, 'meta_atac_metadata.csv' , sep = ""))
+
+peak_names <- fread(paste(data_dir, 'meta_atac_peaks.csv',  sep = ""))
+metacell_mtx <- readMM(paste(data_dir, 'meta_atac_X.mtx', sep = ""))
 # No user input below this line
 #####################################
 peak_names <- unlist(peak_names$V2)
@@ -29,10 +30,10 @@ peak_names <- peak_names[! peak_names %in% c('0')]
 metacell_mtx <- as(metacell_mtx, "dgCMatrix")
 metacell_mtx <- t(metacell_mtx)
 
+
 metacell_se <- SummarizedExperiment(assays=metacell_mtx)
 colnames(metacell_se) <- atac_metadata$V1
-
-diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compare, out_dir}{
+diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compare, out_dir){
     sub_atac_md <- atac_metadata %>% 
       .[,group:=eval(as.name(group_variable))] %>% 
       .[group%in%to_compare] %>%
@@ -78,14 +79,14 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
       .[is.na(logFC),c("logFC","padj_fdr"):=list(0,1)] %>%
       setorder(padj_fdr, na.last=T)
 
-    fwrite(out, sprintf("%s%s_%s_diff_acc.tsv", data_dir, to_compare[1], to_compare[2]), sep="\t", na="NA", quote=F)
+    fwrite(out, sprintf("%s/%s_%s_diff_acc.tsv", data_dir, to_compare[1], to_compare[2]), sep="\t", na="NA", quote=F)
 
 
     sigA_peaks <- out[out$logFC <= -1.25 & out$padj_fdr <=0.01,"feature"] %>% unlist()
     sigB_peaks <- out[out$logFC >= 1.25 & out$padj_fdr <=0.01,"feature"]  %>% unlist()
 
 
-    pdf(file=sprintf("%s%s_%s_MA.pdf", data_dir, to_compare[1], to_compare[2]))
+    pdf(file=sprintf("%s/%s_%s_MA.pdf", data_dir, to_compare[1], to_compare[2]))
 
     with(lrt$table, plot(logCPM,logFC,pch=16,cex=0.2, col="gray"))
 
@@ -96,6 +97,7 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
     dev.off()
     }
 
-for comparison in to_compare{
-    diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, comparison, data_dir)
+for (comparison in to_compare){
+    diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, as.vector(comparison), data_dir)
 }
+

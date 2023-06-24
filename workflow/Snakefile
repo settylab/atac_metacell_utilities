@@ -77,9 +77,31 @@ rule peak_tf:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
     output:
-        expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
+       expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
+        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=output_dir"
+        
+        
+rule diff_acc:
+    input:
+        script = config["scripts"] + "diff_acc.R",
+        pyscript = config["scripts"] + "diff_acc.py",
+        atac = config["anndata"]["atac"],
+        sc_atac = config["anndata"]["sc_atac"],
+        metascript = config["scripts"] + "meta_mtx.py"
+    params:
+        to_compare = config["diff_acc"]["to_compare"],
+        group_variable = config["diff_acc"]["group_variable"],
+        out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
+    output:
+        directory(expand("{dirname}diff_acc/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {params.out_dir}
+        python {input.metascript} --atac={input.atac} --sc_atac={input.sc_atac} --group_variable={params.group_variable} -o={params.out_dir}
+        Rscript {input.script} {params.out_dir} {params.to_compare} {params.group_variable}
+        python {input.pyscript} --atac={input.sc_atac} --to_compare={params.to_compare}
+        """
 
 rule gp_corr:
     input:
@@ -95,7 +117,7 @@ rule gp_corr:
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
         
     output:
-        gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
+        gp_dir = protected(directory(expand("{dirname}gp_corrs/", dirname=output_dir)))
     shell:
         """
         mkdir -p {output.gp_dir}
@@ -103,7 +125,44 @@ rule gp_corr:
             --gtf_file={input.gtf_file} {params.test_set} --n_genes={params.n_genes} --min_corr={params.min_corr} \\
             --max_pval={params.max_pval}
         """
+        
+# ---- Peak Selection Rule --- #
+rule peak_selection:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        diff_acc_dir= expand("{dirname}diff_acc/", dirname=output_dir)
+    params:
+        target = config["peak_selection"]["target"],
+        start = config["peak_selection"]["start"],
+        reference = config["peak_selection"]["reference"],
+        min_logFC = config["peak_selection"]["min_logFC"],
+        max_logFC = config["peak_selection"]["max_logFC"],
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+    conda:
+        "../envs/density_analysis.yaml"
+    script:
+        "scripts/peak_selection.py"
 
+  
+# --- Weighted average scoring rule --- #
+
+rule weighted_average_scores:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "primed_lin_scores.py"
+    params:
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
+        target = config["peak_selection"]["target"]
+    conda:
+        "../envs/density_analysis.yaml"
+    script:
+        "scripts/primed_lin_scores.py"
+ 
+        
 # ---- In Silico ChIP Rules ---- #
 rule compute_ins_chip:
     input:
@@ -114,11 +173,12 @@ rule compute_ins_chip:
     params:
         verbose = config["ins_chip"]["verbose"],
     output:
-        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
+        insc_dir = protected(directory(expand("{dirname}ins_chip/", dirname=output_dir)))
     shell:
         """
         mkdir -p {output.insc_dir}
         python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
+        touch expand("{dirname}/.ins_chip", dirname = {output.insc_dir})
         """
 rule write_ins_chip:
     input:
@@ -174,7 +234,7 @@ rule gene_x_tf:
     input:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
-        ins_chip = expand("{dirname}ins_chip/ins_chip.h5ad", dirname=output_dir),
+        ins_chip = expand("{dirname}ins_chip/", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
@@ -192,40 +252,7 @@ rule gene_x_tf:
             --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
             --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
         """
-# ---- Peak Selection Rule --- #
-rule peak_selection:
-    input:
-        atac = config["anndata"]["sc_atac"],
-        rna = config["anndata"]["sc_rna"],
-        script = config["scripts"] + "peak_selection.py"
-    params:
-        target = config["peak_selection"]["target"],
-        start = config["peak_selection"]["start"],
-        reference = config["peak_selection"]["reference"],
-        min_logFC = config["peak_selection"]["min_logFC"],
-        max_logFC = config["peak_selection"]["max_logFC"],
-        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
-    shell:
-        """
-        python {input.script} --atac={input.atac} --rna={input.rna} --target={params.target} --start={params.start} --reference={params.reference}  --min_corr={params.min_corr} --max_pval={params.max_pval} --min_logFC={params.min_logFC} --max_logFC={params.max_logFC}
-        """
-  
-# --- Weighted average scoring rule --- #
 
-rule weighted_average_scores:
-    input:
-        atac = config["anndata"]["sc_atac"],
-        rna = config["anndata"]["sc_rna"],
-        script = config["scripts"] + "primed_lin_scores.py"
-    params:
-        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
-
-    shell:
-        """
-        python {input.script} --atac={input.atac} --rna={input.rna} --min_corr={params.min_corr} --max_pval={params.max_pval}
-        """
 
 # ---- Cleaning Rule ---- #
 rule clean:
