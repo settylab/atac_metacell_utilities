@@ -1,77 +1,11 @@
-#if __name__ == "__main__":
-#    import argparse
-#    desc = "Selects primed- and lineage-specific ATAC-seq peaks based on user provided lineages and "
-#    
-#    parser = argparse.ArgumentParser(
-#        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-#    )
-#    
-#    parser.add_argument(
-#        "--atac",
-#        metavar="AnnData",
-#        type=str,
-#        required=True,
-#        help="Path to ATAC single cell AnnData, common obs with RNA",
-#    )
-#    parser.add_argument(
-#        "--rna",
-#        metavar="AnnData",
-#        type=str,
-#        required=True,
-#        help="Path to RNA single cell AnnData, common obs with ATAC",
-#    )
-#    parser.add_argument(
-#        "--start",
-#        type=str,
-#        required=True,
-#        help="Starting cell type name",
-#    )
-#    parser.add_argument(
-#        "--reference",
-#        metavar="str",
-#        type=str,
-#        required=True,
-#        help="JSON formatted string with reference lineages as keys and associated cell type as values to convert to dictionary",
-#    )
-#    parser.add_argument(
-#        "--min_logFC",
-#        type=float,
-#        default=-0.25,
-#        help="Float value of minimum logFC threshold for target lineage specific peaks",
-#    )
-#    parser.add_argument(
-#        "--max_logFC",
-#        type=float,
-#        default=0.25,
-#        help="Float value of max logFC threshold for reference lineages",
-#    )
-#    parser.add_argument(
-#        "--max_pval",
-#        type=float,
-#        default=0.1,
-#        help="Float value of max p-value threshold for gene-peak correlations",
-#    )
-#    parser.add_argument(
-#        "--min_corr",
-#        type=float,
-#        default=0.0,
-#        help="Float value of minimum correlation coefficient for gene-peak correlations",
-#    )
-#
-#    args, unknown = parser.parse_known_args()
-
-#    shell:
-#        """
-#        python {input.script} --atac={input.atac} --rna={input.rna} --target={params.target} --start={params.start} --reference={params.reference}  --min_corr={params.min_corr} --max_pval={params.max_pval} --min_logFC={params.min_logFC} --max_logFC={params.max_logFC}
-#        """
-
+import scanpy as sc
+import scipy
+import pandas as pd
+import numpy as np
+import pickle
+from tqdm.auto import tqdm
 
 def main():
-    print(snakemake.input[0])
-    print(snakemake.input[1])
-    print(snakemake.input)
-    print(snakemake.params)
-    
     atac_ad = sc.read(snakemake.input[0])
     rna_ad = sc.read(snakemake.input[1])
     
@@ -91,16 +25,16 @@ def main():
     #with open (snakemake.input[2] + "/gp_corrs.pickle", "rb") as handle:
     print("Loading gene-peak corrs...")
         #gene_peak_corrs = pickle.load(handle)
-    gene_peak_corrs = dict()
-    for gene in tqdm(atac_ad.uns['gp_corrs']['gene'].unique()):
-        gene_peak_corrs[gene] = atac_ad.uns['gp_corrs'].loc[atac_ad.uns['gp_corrs']['gene'] == gene, :]
+    gene_peak_corrs = dict(list(atac_ad.uns['gp_corrs'].groupby('gene')))
     diff_peaks = dict()
     start_peaks = dict()
     for ref_lineage in ref_lineages.keys():
         ref_celltype = ref_lineages[ref_lineage]
         #differential accessibility compared to target cell type
-        diff_peaks[]
-
+        diff_peaks[ref_lineage] = pd.read_csv(snakemake.input[2]+ f"/{ref_celltype}_{target_celltype}_diff_acc.tsv", index_col = 0, sep = "\t")
+        diff_peaks[ref_lineage]['feature'] = diff_peaks[ref_lineage].index
+        start_peaks[ref_lineage] = pd.read_csv(snakemake.input[2]+ f"/{ref_celltype}_{start_celltype}_diff_acc.tsv", index_col = 0, sep = "\t")
+        start_peaks[ref_lineage]['feature'] = start_peaks[ref_lineage].index
     #select list of peaks which are positively correlated with gene expression and meet p value criteria
     correlated_peaks = pd.Series(dtype = "object")
     print("Removing peaks not positively correlated with gene expression...")
@@ -117,7 +51,7 @@ def main():
     print(f"Removing peaks with logFC < {min_logFC}, correlation <= {min_corr} or pvalue >= ")
     for ref_lineage in tqdm(diff_peaks.keys()):
         #open peak filtering
-        binary_filter_counts = open_peaks.T.loc[target_celltype, diff_peaks[ref_lineage].index].sum(axis=0)
+        binary_filter_counts = open_peaks.T.loc[target_celltype, diff_peaks[ref_lineage].index].values
         binary_filter_index = [True if ( x > 0) else False for x in binary_filter_counts]
         #filter out peaks below the minimum logFC cutoff
         diff_peaks[ref_lineage] = diff_peaks[ref_lineage][binary_filter_index].copy()
@@ -149,17 +83,20 @@ def main():
     unique_peaks[target_lineage]= unique_peaks[target_lineage][binary_filter_index]
     print("Peak selection completed! Saving metadata ...")
     # add unique peaks to annData
-    atac_ad.var[f'{target_lineage}_unique_peaks'] = pd.Series(atac_ad.var_names.isin(unique_peaks[target_lineage].index), index = atac_ad.var_names)
+    atac_ad.uns[f'{target_lineage}_unique_peaks'] = list(atac_ad.var_names[atac_ad.var_names.isin(unique_peaks[target_lineage].index)])
+    #print( atac_ad.uns[f'{target_lineage}_unique_peaks']))
+    print("Writing primed peaks...")
+    atac_ad.uns[f'{target_lineage}_primed_peaks'] = list(atac_ad.var_names[atac_ad.var_names.isin(unique_peaks[target_lineage][unique_peaks[target_lineage]['primed'] == True].index)])
+    print("Writing lineage specific peaks...")
+    atac_ad.uns[f'{target_lineage}_lineage_specific_peaks'] = list(atac_ad.var_names[atac_ad.var_names.isin(unique_peaks[target_lineage][unique_peaks[target_lineage]['lineage_specific'] == True].index)])
     # save unique peak results into .uns
+    print(atac_ad)
+    print(atac_ad.obs.head())
+    print(atac_ad.obsm['X_svd'])
+    print
     atac_ad.write(snakemake.input[0])
     print("Completed!")
     
     
 if __name__ == "__main__":
-    import scanpy as sc
-    import scipy
-    import pandas as pd
-    import numpy as np
-    import pickle
-    from tqdm.auto import tqdm
     main()
