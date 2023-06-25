@@ -90,6 +90,8 @@ if __name__ == "__main__":
 import scanpy as sc
 import SEACells
 import pickle
+import pandas as pd
+from tqdm.auto import tqdm
 
 def main(args):
     # Load data
@@ -116,7 +118,13 @@ def main(args):
     
     with open(args.outdir + '/peak_cts.pickle', 'wb') as handle:
         pickle.dump(peak_counts, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    atac_ad.uns["gp_corrs"] = gp_corrs
+    
+    gp_corr_df = pd.DataFrame()
+    for gene in tqdm(gp_corr.keys()):
+        if type(gp_corr[gene]) != int:
+            gp_corr[gene]["gene"] = pd.Series(gene, gp_corr[gene].index)
+            gp_corr_df = pd.concat([gp_corr_df, gp_corr[gene]])
+    atac_ad.uns["gp_corrs"] = gp_corr_df
     
 if __name__ == "__main__":
     main(args)
