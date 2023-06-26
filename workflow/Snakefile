@@ -158,7 +158,7 @@ rule weighted_average_scores:
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
         target = config["peak_selection"]["target"]
     conda:
-        "../envs/density_analysis.yaml"
+        "../envs/environment.yaml"
     script:
         "scripts/primed_lin_scores.py"
  
@@ -178,18 +178,16 @@ rule compute_ins_chip:
         """
         mkdir -p {output.insc_dir}
         python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
-        touch expand("{dirname}/.ins_chip", dirname = {output.insc_dir})
+        touch "{output.insc_dir}/.ins_chip"
         """
 rule write_ins_chip:
     input:
         atac = config["anndata"]["sc_atac"],
         rna = config["anndata"]["sc_rna"],
         script = config["scripts"] + "write_ins_chip.py",
-        data_dir =output_dir + "ins_chip/"
+        data_dir =output_dir + "ins_chip/",
     params:
         verbose = config["ins_chip"]["verbose"],
-    output:
-        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
     shell:
         """
         python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir} 
@@ -232,10 +230,10 @@ rule chromvar:
 
 rule gene_x_tf:
     input:
-        atac = config["anndata"]["atac"],
-        rna = config["anndata"]["rna"],
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
         ins_chip = expand("{dirname}ins_chip/", dirname=output_dir),
-        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
+        gp_dir = expand("{dirname}gp_corr/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
@@ -248,7 +246,7 @@ rule gene_x_tf:
     shell:
         """
         mkdir -p {output.gtf_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={params.ins_chip}  \\
+        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={input.ins_chip}  \\
             --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
             --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
         """

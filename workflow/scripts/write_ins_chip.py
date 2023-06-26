@@ -58,14 +58,14 @@ def main(args):
         near.loc[:,'gene'] = pd.Series(data = gene, index =near.index)
         near = near.loc[near[chip_gene] >0,[chip_gene, 'gene']]
         near_targets[chip_gene] = pd.concat([near_targets[chip_gene], near])
-    near_target_genes.loc[chip_gene, :]= [True if x in near_targets[chip_gene]['gene'].unique() else False for x in near_target_genes.columns]
+    near_target_genes.loc[chip_gene, :]= [0 if x in near_targets[chip_gene]['gene'].unique() else 1 for x in near_target_genes.columns]
     print(near_target_genes.values)
     print(near_target_genes.shape)
     for col in rna_ad.obs.select_dtypes(exclude=["number","bool","object_"]).columns:
         print(rna_ad.obs[col].dtype)
         rna_ad.obs[col] = rna_ad.obs[col].astype(str).astype("category")
-    rna_ad.varm['TF_targets'] = near_target_genes.values
-    rna_ad.uns['TF_targets_columns'] = list(target_genes)
+    rna_ad.varm['TF_targets'] = near_target_genes.astype(int).values
+    rna_ad.uns['TF_targets_columns'] = list(target_genes.astype(str))
     rna_ad.write_h5ad(args.rna)
     
     
