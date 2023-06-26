@@ -141,7 +141,7 @@ rule peak_selection:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
     conda:
-        "../envs/density_analysis.yaml"
+        "../envs/environment.yaml"
     script:
         "scripts/peak_selection.py"
 

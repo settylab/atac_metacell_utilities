@@ -76,6 +76,7 @@ if __name__ == "__main__":
 import pandas as pd
 import numpy as np
 import scanpy as sc
+from scipy import sparse
 import pickle
 from tqdm.auto import tqdm
 from anndata import AnnData
@@ -163,7 +164,7 @@ def compute_gene_tf_mat(atac_ad, peak_x_tf, gene_peak, gene_tfs):
     tfs = peak_x_tf.var_names
 
     # initiate three DFs
-    gtf_sum = pd.DataFrame(0.0,index=gene_peak.index, columns=tfs)
+    gtf_sum = pd.DataFrame(0.0,index=gene_peak.keys(), columns=tfs)
     gtf_fimo, gtf_weighted = gtf_sum.copy(), gtf_sum.copy()
   
     atac_expr = pd.DataFrame(atac_ad.X.todense(), index=atac_ad.obs_names, 
@@ -195,11 +196,11 @@ def main(args):
     # Load data
     atac_ad = sc.read(args.atac)
     rna_ad = sc.read(args.rna)
-    peak_x_tf_df = pd.DataFrame(atac_ad.varm["in_silico_ChIP"], index = atac_ad.var_names,  atac_ad.uns['in_silico_ChIP_columns'])
-    peak_x_tf = anndata.AnnData(peak_x_tf_df)
+    peak_x_tf_df = pd.DataFrame(atac_ad.varm["in_silico_ChIP"], index = atac_ad.var_names,  columns = atac_ad.uns['in_silico_ChIP_columns'])
+    peak_x_tf = AnnData(peak_x_tf_df)
+    peak_x_tf.X = sparse.csr_matrix(peak_x_tf.X) 
     
-    with open(args.gp_corr + "/gp_corr.pickle", 'rb') as handle:
-        gene_peak = pickle.load(handle)
+    gene_peak = dict(list(atac_ad.uns['gp_corrs'].groupby('gene')))
     
     # Filter genes for ones that have FIMO score
     gene_set = rna_ad.var_names
