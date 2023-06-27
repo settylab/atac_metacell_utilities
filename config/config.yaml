@@ -10,7 +10,7 @@ anndata:
     rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_rna_w_SEACells_meta.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_meta_ad.h5ad" #<path/to/SEACell/RNA/AnnData/here>
     sc_atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_atac_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_atac_ad.h5ad" 
     sc_rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_rna_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_ad.h5ad" 
-    # documenting what label was used to create the SEACells AnnData
+    # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
     SEACell_label: "SEACell"
 peaks:
     width: 150
