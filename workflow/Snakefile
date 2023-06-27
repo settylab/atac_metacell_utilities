@@ -9,6 +9,7 @@ rule all:
     input:
         gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
         chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
+        score_dir = expand("{dirname}peak_scores/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -88,18 +89,17 @@ rule diff_acc:
         pyscript = config["scripts"] + "diff_acc.py",
         atac = config["anndata"]["atac"],
         sc_atac = config["anndata"]["sc_atac"],
-        metascript = config["scripts"] + "meta_mtx.py"
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir)
     params:
         to_compare = config["diff_acc"]["to_compare"],
         group_variable = config["diff_acc"]["group_variable"],
-        out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
     output:
-        directory(expand("{dirname}diff_acc/", dirname=output_dir))
+        out_dir = directory(expand("{dirname}diff_acc/", dirname=output_dir))
     shell:
         """
-        mkdir -p {params.out_dir}
-        python {input.metascript} --atac={input.atac} --sc_atac={input.sc_atac} --group_variable={params.group_variable} -o={params.out_dir}
-        Rscript {input.script} {params.out_dir} {params.to_compare} {params.group_variable}
+        mkdir -p {output.out_dir}
+        python {input.metascript} --atac={input.atac} --sc_atac={input.sc_atac} --group_variable={params.group_variable} -o={output.out_dir}
+        Rscript {input.script} {output.out_dir} {params.to_compare} {params.group_variable}
         python {input.pyscript} --atac={input.sc_atac} --to_compare={params.to_compare}
         """
 
@@ -115,9 +115,9 @@ rule gp_corr:
         n_genes = config["gene_peak_corr_config"]["n_genes"],
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
-        
+       
     output:
-        gp_dir = protected(directory(expand("{dirname}gp_corrs/", dirname=output_dir)))
+        gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.gp_dir}
@@ -131,7 +131,7 @@ rule peak_selection:
     input:
         atac = config["anndata"]["sc_atac"],
         rna = config["anndata"]["sc_rna"],
-        diff_acc_dir= expand("{dirname}diff_acc/", dirname=output_dir)
+        out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
     params:
         target = config["peak_selection"]["target"],
         start = config["peak_selection"]["start"],
@@ -140,6 +140,8 @@ rule peak_selection:
         max_logFC = config["peak_selection"]["max_logFC"],
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+    output:
+        out_dir = expand("{dirname}peak_selection/", dirname=output_dir)
     conda:
         "../envs/environment.yaml"
     script:
@@ -148,15 +150,18 @@ rule peak_selection:
   
 # --- Weighted average scoring rule --- #
 
-rule weighted_average_scores:
+rule peak_scores:
     input:
         atac = config["anndata"]["sc_atac"],
         rna = config["anndata"]["sc_rna"],
-        script = config["scripts"] + "primed_lin_scores.py"
+        script = config["scripts"] + "primed_lin_scores.py",
+        peak_selection = expand("{dirname}peak_selection/", dirname=output_dir)
     params:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
         target = config["peak_selection"]["target"]
+    output:
+        score_file = expand("{dirname}peak_scores/", dirname=output_dir)
     conda:
         "../envs/environment.yaml"
     script:
@@ -233,7 +238,7 @@ rule gene_x_tf:
         atac = config["anndata"]["sc_atac"],
         rna = config["anndata"]["sc_rna"],
         ins_chip = expand("{dirname}ins_chip/", dirname=output_dir),
-        gp_dir = expand("{dirname}gp_corr/", dirname=output_dir),
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
@@ -246,8 +251,7 @@ rule gene_x_tf:
     shell:
         """
         mkdir -p {output.gtf_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={input.ins_chip}  \\
-            --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
+        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={input.ins_chip}  \\ --min_corr={params.min_corr} --max_pval={params.max_pval} \\
             --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
         """
 
