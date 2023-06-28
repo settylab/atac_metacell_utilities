@@ -104,16 +104,16 @@ def main(args):
         gene_set = rna_ad.var_names
     
     # Compute Gene-Peak Correlation scores
-    gp_corrs = SEACells.genescores.get_gene_peak_correlations(atac_ad, rna_ad,
+    gp_corr = SEACells.genescores.get_gene_peak_correlations(atac_ad, rna_ad,
                                                               path_to_gtf=args.gtf_file,
                                                               span=args.transcript_span, n_jobs=args.n_jobs,
                                                               gene_set=gene_set)
     
-    #peak_counts = SEACells.genescores.get_peak_counts(gp_corrs, max_pval=args.max_pval, min_corr=args.min_corr)
-    peak_counts = SEACells.genescores.get_gene_peak_assocations(gp_corrs, pval_cutoff=args.max_pval, cor_cutoff=args.min_corr)
+    #peak_counts = SEACells.genescores.get_peak_counts(gp_corr, max_pval=args.max_pval, min_corr=args.min_corr)
+    peak_counts = SEACells.genescores.get_gene_peak_assocations(gp_corr, pval_cutoff=args.max_pval, cor_cutoff=args.min_corr)
     # save files
     with open(args.outdir + '/gp_corr.pickle', 'wb') as handle:
-        pickle.dump(gp_corrs, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(gp_corr, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
     
     with open(args.outdir + '/peak_cts.pickle', 'wb') as handle:
