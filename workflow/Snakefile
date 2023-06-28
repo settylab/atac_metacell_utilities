@@ -69,12 +69,8 @@ rule fimo:
     shell:
         """
         fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-<<<<<<< HEAD
-        #rm output.fimo_dir/cisml.xml
-=======
-        touch output.fimo_dir/cisml.xml
-        rm output.fimo_dir/cisml.xml
->>>>>>> be25fd0f2bb618a7b27100a576a0a4e37b3e812c
+        rm -f output.fimo_dir/cisml.xml
+
         """
 
 rule peak_tf:
