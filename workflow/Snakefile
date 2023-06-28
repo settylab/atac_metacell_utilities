@@ -79,9 +79,9 @@ rule peak_tf:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         script = config["scripts"] + "peak_tf.py"
     output:
-       expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
+       out_dir = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
     shell:
-        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o=output_dir"
+        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
         
         
 rule diff_acc:
@@ -132,6 +132,7 @@ rule peak_selection:
     input:
         atac = config["anndata"]["sc_atac"],
         rna = config["anndata"]["sc_rna"],
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
     params:
         target = config["peak_selection"]["target"],
