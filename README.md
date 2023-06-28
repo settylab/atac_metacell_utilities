@@ -227,8 +227,7 @@ When running this pipeline on an HPC system which uses `lmod` to load software, 
 To run using the snakemake version installed with `gene-TF`, make sure the `gene-TF` environment is active, then run the pipeline as follows:
 
 ```
-python -m snakemake --cores 1 <rule>
-
+python -m snakemake --cores 1 name-of-rule
 ```
 
 
