@@ -69,7 +69,7 @@ rule fimo:
     shell:
         """
         fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-        rm output.fimo_dir/cisml.xml
+        #rm output.fimo_dir/cisml.xml
         """
 
 rule peak_tf:
@@ -87,9 +87,9 @@ rule diff_acc:
     input:
         script = config["scripts"] + "diff_acc.R",
         pyscript = config["scripts"] + "diff_acc.py",
+        metacell_script = config["scripts"] + "meta_mtx.py",
         atac = config["anndata"]["atac"],
         sc_atac = config["anndata"]["sc_atac"],
-        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir)
     params:
         to_compare = config["diff_acc"]["to_compare"],
         group_variable = config["diff_acc"]["group_variable"],
@@ -98,7 +98,7 @@ rule diff_acc:
     shell:
         """
         mkdir -p {output.out_dir}
-        python {input.metascript} --atac={input.atac} --sc_atac={input.sc_atac} --group_variable={params.group_variable} -o={output.out_dir}
+        python {input.metacell_script} --atac={input.atac} --sc_atac={input.sc_atac} --group_variable={params.group_variable} -o={output.out_dir}
         Rscript {input.script} {output.out_dir} {params.to_compare} {params.group_variable}
         python {input.pyscript} --atac={input.sc_atac} --to_compare={params.to_compare}
         """
