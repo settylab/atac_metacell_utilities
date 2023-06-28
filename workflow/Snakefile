@@ -69,6 +69,7 @@ rule fimo:
     shell:
         """
         fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
+        touch output.fimo_dir/cisml.xml
         rm output.fimo_dir/cisml.xml
         """
 
