@@ -15,12 +15,12 @@ to_compare = strsplit(to_compare, as.character('/'))[[1]]
 to_compare = strsplit(to_compare, as.character(','), fixed = TRUE)
 
 print(to_compare)
-fname <- paste(data_dir, 'meta_atac_metadata.csv',  sep = "")
+fname <- paste(data_dir, '/meta_atac_metadata.csv',  sep = "")
 print(fname)
-atac_metadata <- fread(paste(data_dir, 'meta_atac_metadata.csv' , sep = ""))
+atac_metadata <- fread(paste(data_dir, '/meta_atac_metadata.csv' , sep = ""))
 
-peak_names <- fread(paste(data_dir, 'meta_atac_peaks.csv',  sep = ""))
-metacell_mtx <- readMM(paste(data_dir, 'meta_atac_X.mtx', sep = ""))
+peak_names <- fread(paste(data_dir, '/meta_atac_peaks.csv',  sep = ""))
+metacell_mtx <- readMM(paste(data_dir, '/meta_atac_X.mtx', sep = ""))
 # No user input below this line
 #####################################
 peak_names <- unlist(peak_names$V2)
