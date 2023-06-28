@@ -94,8 +94,9 @@ def main(args):
     
     # Build peak x TF AnnData
     pxtf_ad = build_peak_tf(fimo_scores, peaks_df)
-
+    print(f"Writing peak x TF matrix to {args.outdir + 'peak_x_tf.h5ad'} ...")
     pxtf_ad.write(args.outdir + 'peak_x_tf.h5ad')
+    print("Completed!")
 
     
 if __name__ == "__main__":
