@@ -7,7 +7,6 @@ output_dir = config["output"]
 # ---- Main Rule ---- #
 rule all:
     input:
-        gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
         chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
         score_dir = expand("{dirname}peak_scores/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
