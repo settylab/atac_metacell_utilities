@@ -1,9 +1,9 @@
 # ATAC-metacell-utilities
 
-This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline for utilities with ATAC and RNA metacells inferred using SEACells algorithm (1). The following outputs are generated 
-* In-silico ChIP (2) TF targets 
-* ChromVAR results (3) using In-silico ChIP results
-* Primed and lineage specific peaks in single-cell data as described in (4)
+This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline for utilities with ATAC and RNA metacells inferred using SEACells algorithm (ref-1). The following outputs are generated 
+* In-silico ChIP (ref-2) TF targets 
+* ChromVAR results (ref-3) using In-silico ChIP results
+* Primed and lineage specific peaks in single-cell data as described in (ref-4)
 
 NOTE: The input anndata objects are updated with the outputs. 
 
@@ -19,8 +19,8 @@ Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View t
 
 The input single-cell anndata (`*_sc_ad`) and metacell anndata (`*_mc_ad`) objects are updated with the following information. We therefore providing a copy of your anndata objects as input to this pipeline
 
-* `atac_mc_ad.uns['gp_corrs']`: Metacell level peak accessibility and gene expression correlations computed using SEACells (1)
-* `atac_mc_ad.varm['<celltypeA>_<celltypeB>_diff_acc']`: Differential accessibiliy between cell type A and cell type B using edgeR (2)
+* `atac_mc_ad.uns['gp_corrs']`: Metacell level peak accessibility and gene expression correlations computed using SEACells 
+* `atac_mc_ad.varm['<celltypeA>_<celltypeB>_diff_acc']`: Differential accessibiliy between cell type A and cell type B using edgeR 
 * `atac_sc_ad.varm['OpenPeaks']`: Matrix indicating which peak is open in each cell type
 * `atac_sc_ad.layers[f'<Target cell type>_primed']`: ATAC peaks primed in Target cell type
 * `atac_sc_ad.layers[f'<Target cell type>_lineage_specific']`: ATAC lineage specific peaks in Target cell type
