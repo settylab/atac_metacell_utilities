@@ -1,6 +1,12 @@
 # ATAC-metacell-utilities
 
-This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline to produce `gene x TF` matrices representing the regulatory potential of TFs on genes, improved chromVAR deviations scores using custom MOTIF annotations, peak accessibility measurements, and more. These outputs are written to the user-provided single cell ATAC and RNA AnnData objects for data portability and reproducibility.
+This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/stable/) pipeline for utilities with ATAC and RNA metacells inferred using SEACells algorithm (1). The following outputs are generated 
+* In-silico ChIP (2) TF targets 
+* ChromVAR results (3) using In-silico ChIP results
+* Primed and lineage specific peaks in single-cell data as described in (4)
+
+NOTE: The input anndata objects are updated with the outputs. 
+
 
 ## Overview:
 
@@ -8,13 +14,26 @@ Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View t
 
 ![DAG of workflow](./dag.png)
 
-## Types of `gene x TF` matrices produced
 
-Three versions of the `gene x TF` matrix are produced, each with a different proxy for quantifying regulation:
+## Output of the pipeline
 
-* sum of gene accessibility based on ATAC peak counts
-* sum of FIMO scores
-* sum of gene accessibility, peaks weighted by FIMO scores
+The input single-cell anndata (`*_sc_ad`) and metacell anndata (`*_mc_ad`) objects are updated with the following information. We therefore providing a copy of your anndata objects as input to this pipeline
+
+* `atac_mc_ad.uns['gp_corrs']`: Metacell level peak accessibility and gene expression correlations computed using SEACells (1)
+* `atac_mc_ad.varm['<celltypeA>_<celltypeB>_diff_acc']`: Differential accessibiliy between cell type A and cell type B using edgeR (2)
+* `atac_sc_ad.varm['OpenPeaks']`: Matrix indicating which peak is open in each cell type
+* `atac_sc_ad.layers[f'<Target cell type>_primed']`: ATAC peaks primed in Target cell type
+* `atac_sc_ad.layers[f'<Target cell type>_lineage_specific']`: ATAC lineage specific peaks in Target cell type
+* `rna_sc_ad.layers[f'<Target cell type>_primed']`: Primed accessiblity scores for each gene in the target cell type
+* `rna_sc_ad.layers[f'<Target cell type>_lineage_specific']`: Lineage specific accessiblity scores for each gene in Target cell type
+* `atac_sc_ad.varm['FIMO'], atac_sc_ad.uns['FIMOcolumns']`: FIMO motif enrichment for ATAC peaks
+* `atac_sc_ad.varm['InSilicoChip'], atac_sc_ad.uns['FIMOcolumns']`: In-silico ChIP motif enrichment for ATAC peaks
+* `atac_sc_ad.varm['FIMO'], atac_sc_ad.uns['FIMOcolumns']`: FIMO motif enrichment for ATAC peaks
+* `atac_sc_ad.varm['InSilicoChip'], atac_sc_ad.uns['InSilicoChipcolumns']`: In-silico ChIP motif enrichment for ATAC peaks
+* `rna_sc_ad.obsm['chromVAR_deviations']`: chromVAR results with In-silico ChIP results
+* `rna_sc_ad.varm['geneXTF']`: Gene X TF targets inferred using SEACells gene-peaks correlations and in-silico ChIP results. 
+
+
 
 ## Environment Setup
 In order to run this pipeline, certain Python and R packages need to be installed. Importantly, the `environment.yaml`/`requirements.txt` files include the `snakemake` package.
@@ -37,7 +56,7 @@ There are two options, using `conda` or using `pip`.
 With `conda`:
 
 ```
-envName=gene-TF
+envName=atac-metacell-utils
 
 conda env create -n "$envName" --file envs/environment.yaml
 
@@ -120,19 +139,21 @@ The following values have default values specified in the included `config.yaml`
 * `n_genes` *int* : number of genes to use in test set, if applicable, `default=20`
 * `min_corr` *float* : minimum gene-peak correlation to pass filtering, `default=0.0`
 * `max_pval` *float* : max p-value for gene-peak correlation to pass filtering, `default=0.1`
-* `min_peaks` *int* : minimum number of significant peaks to pass gene filtering,  `default=2`
+* `min_peaks` *int* : minimum number of significant peaks to pass gene filtering,  `default=5`
 
 *Differential accessibility params:*
 * `group_variable` *str* : the name of the column in the single-cell ATAC .obs to annotate metacells by, such as celltype.
 *  `to_compare` *str* : A string of comma-separated pairs of levels of `group_variable`, separated by forward slashes. example: "EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
 
 *Peak selection params:*
-* `target` *list* : a list of length 2 with the target lineage in position 0 and the target level of `group_variable` in position 1. 
-* `start` *str* : the level of `group_variable` corresponding to the starting state.
-* `reference` *dict* : A dictionary of lineages and their corresponding representative cell type, defined in YAML format.
-* `min_logFC` *float* : the minimum log fold change for a peak to be considered to be differentially accessible in the target lineage. `default=-0.25`
-*  `max_logFC` *float* : the max allowable log-fold change accessibility of a peak in a non-target lineage relative to the starting state. `default=0.25`
+* `target` *list* : Target lineage for identification of primed and lineage specific peaks. List of length 2: 1)Target lineage name for annotation and 2)Value of `group_variable`.
+* `start` *str* : Value of the `group_variable` corresponding to the stem cell population
+* `reference` *dict* : A dictionary of lineages and their corresponding representative cell type, defined in YAML format. Note that the comparisons should be included for each reference and target combination, and each reference and start combination
+* `min_logFC` *float* : the minimum log fold change for a peak to be considered to be differentially accessible in the target lineage. `default=0
+*  `max_logFC` *float* : the max allowable log-fold change accessibility of a peak in a reference lineage relative to the starting state. `default=0.25`
     
+
+`Gene-Peak correlation params`, `Differential accessibility params`, `Peak selection params` should be updated for computing primed and lineage-specific peaks and scores.
 
 ### Command-line config specification
 
@@ -260,12 +281,14 @@ sbatch -o /path/to/log/file.log name_of_script.sh rule_name num_cores
 
 ## Log Files
 
-For the `fimo` and `gene_x_tf rules`, separate log files are created and can be accessed in the `logs/` directory.
+For the `fimo` rule, separate log files are created and can be accessed in the `logs/` directory.
 
 Other log files can be accessed in the `.snakemake/log` directory.
 
-*Improved logging is in progress.*
 
 ## References
-
+1. SEACells: https://www.nature.com/articles/s41587-023-01716-9
+2. In-silico ChIP: https://www.biorxiv.org/content/10.1101/2022.06.15.496239v1
+3. chromVAR: https://www.nature.com/articles/nmeth.4401
+4. Mellon: TBD
 The custom MOTIF annotations are based off of *in silico ChIP-seq*, introduced by Argelaguet et al in [this paper.](https://www.biorxiv.org/content/10.1101/2022.06.15.496239v1)

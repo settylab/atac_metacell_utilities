@@ -7,8 +7,10 @@ output_dir = config["output"]
 # ---- Main Rule ---- #
 rule all:
     input:
-        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
-        score_dir = expand("{dirname}peak_scores/", dirname=output_dir)
+        chromvar_outdir = expand(
+            "{dirname}chromvar_output/", dirname=output_dir),
+        score_dir = expand("{dirname}peak_scores/", dirname=output_dir),
+        gene_x_tf_dir = expand("{dirname}gene_x_tf/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -68,20 +70,25 @@ rule fimo:
         out = config["logs"] + "fimo.out"
     shell:
         """
-        fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-        rm -f {output.fimo_dir}/cisml.xml
+        # fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
+        # rm -f {output.fimo_dir}/cisml.xml
 
         """
 
 rule peak_tf:
     input:
-        fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
-        script = config["scripts"] + "peak_tf.py"
+        script = config["scripts"] + "peak_tf.py",
+        sc_atac = config["anndata"]["sc_atac"],
+    # params:
+        fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
+    conda:
+        "../envs/environment.yaml"
     output:
-        out_dir = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir)
+        out_dir = directory(
+            expand("{dirname}peak_tf/", dirname=output_dir))
     shell:
-        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
+        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output.out_dir} --sc_atac={input.sc_atac}"
 
 
 rule diff_acc:
@@ -182,7 +189,8 @@ rule peak_scores:
         min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"],
         target = config["peak_selection"]["target"]
     output:
-        out_dir = directory(expand("{dirname}peak_scores/", dirname=output_dir))
+        out_dir =
+        directory(expand("{dirname}peak_scores/", dirname=output_dir))
     conda:
         "../envs/environment.yaml"
     script:
@@ -194,17 +202,17 @@ rule compute_ins_chip:
     input:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
-        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        sc_atac = config["anndata"]["sc_atac"],
         script = config["scripts"] + "compute_ins_chip.py",
     params:
         verbose = config["ins_chip"]["verbose"],
     output:
-        insc_dir = protected(
-            directory(expand("{dirname}ins_chip/", dirname=output_dir)))
+        insc_dir =
+        directory(expand("{dirname}ins_chip/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.insc_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
+        python {input.script} --atac={input.atac} --rna={input.rna} --sc_atac={input.sc_atac} -o={output.insc_dir} {params.verbose}
         touch "{output.insc_dir}/.ins_chip"
         """
 rule write_ins_chip:
@@ -217,7 +225,7 @@ rule write_ins_chip:
         verbose = config["ins_chip"]["verbose"],
     shell:
         """
-        python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir} 
+        python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir}
         """
 rule prep_chromvar:
     input:
@@ -234,12 +242,12 @@ rule prep_chromvar:
         """
         mkdir -p {output.chromvar_indir}
         python {input.script} --sc_atac={input.sc_atac} --ins_chip_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
-            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir} 
+            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir}
         """
 
 rule chromvar:
     input:
-        atac = config["anndata"]["sc_atac"],
+        sc_rna = config["anndata"]["sc_rna"],
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
         chromvar_indir = expand(
             "{dirname}chromvar_input/", dirname=output_dir),
@@ -254,14 +262,15 @@ rule chromvar:
         """
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
-        python {input.pyscript} --atac {input.atac} --out {output.chromvar_outdir}
+        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
         """
-# ---- Computation Rule ---- #
 
+# ---- Computation Rule ---- #
 rule gene_x_tf:
     input:
-        atac = config["anndata"]["sc_atac"],
-        rna = config["anndata"]["sc_rna"],
+        sc_atac = config["anndata"]["sc_atac"],
+        sc_rna = config["anndata"]["sc_rna"],
+        atac = config["anndata"]["atac"],
         ins_chip = expand("{dirname}ins_chip/", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
@@ -269,15 +278,14 @@ rule gene_x_tf:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
         min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
-    log:
-        out = config["logs"] + "gtf.out"
     output:
-        gtf_dir = directory(expand("{dirname}gtf_mats/", dirname=output_dir))
+        gtf_dir = directory(expand("{dirname}gene_x_tf/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.gtf_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --ins_chip={input.ins_chip}  \\ --min_corr={params.min_corr} --max_pval={params.max_pval} \\
-            --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
+        python {input.script} --atac={input.atac} --sc_atac={input.sc_atac} --sc_rna={input.sc_rna}\\
+         --min_corr={params.min_corr} --max_pval={params.max_pval} \\
+         --min_peaks={params.min_peaks} -o={output.gtf_dir}
         """
 
 
