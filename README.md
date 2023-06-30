@@ -5,8 +5,6 @@ This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/sta
 * ChromVAR results (ref-3) using In-silico ChIP results
 * Primed and lineage specific peaks in single-cell data as described in (ref-4)
 
-NOTE: The input anndata objects are updated with the outputs. 
-
 
 ## Overview:
 
@@ -14,10 +12,15 @@ Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View t
 
 ![DAG of workflow](./dag.png)
 
+`peak_scores` generates primed and lineage-specific accessibility scores. 
+`compute_ins_chip` performs in-silico ChIP analysis 
+`diff_acc` can be used for differential accessibility between cell types using metacells
+`chromvar` generatees chromVAR results
 
 ## Output of the pipeline
+The output of the pipeline is to update the user provided anndata objects following the style in `scanpy.` Given the extensive changes, we recommend using copies of your anndata objects to avoid corrupting your original objects. 
 
-The input single-cell anndata (`*_sc_ad`) and metacell anndata (`*_mc_ad`) objects are updated with the following information. We therefore providing a copy of your anndata objects as input to this pipeline
+The input single-cell anndata (`*_sc_ad`) and metacell anndata (`*_mc_ad`) objects are updated with the following information. 
 
 * `atac_mc_ad.uns['gp_corrs']`: Metacell level peak accessibility and gene expression correlations computed using SEACells 
 * `atac_mc_ad.varm['<celltypeA>_<celltypeB>_diff_acc']`: Differential accessibiliy between cell type A and cell type B using edgeR 
@@ -83,9 +86,7 @@ snakemake --cores 1 renv_install --config renv_loc=<path/to/user/R/library>
 **NOTE:** `--cores` can tell `snakemake` how many cores are available for use. It will automatically run the jobs in parallel, if possible.
 
 
-This will run the `snakemake` rule that will:
-1. Load the R module
-2. Install the `renv` package into the library location specified above
+This will run the `snakemake` rule that will install the `renv` package into the library location specified above
 
 Next, we can install all the required R packages:
 
