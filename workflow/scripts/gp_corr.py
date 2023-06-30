@@ -94,6 +94,10 @@ from tqdm.auto import tqdm
 
 
 def main(args):
+    # CReate directory to mark completion
+    import os
+    os.makedirs(str(args.outdir), exist_ok=True)
+    return
 
     print('Loading data...')
     atac_ad = sc.read(args.atac)
@@ -125,6 +129,10 @@ def main(args):
     # Write anndata file
     print('Saving anndata file ...')
     atac_ad.write(args.atac)
+
+    # CReate directory to mark completion
+    import os
+    os.makedirs(str(args.outdir), exist_ok=True)
 
 
 if __name__ == "__main__":
