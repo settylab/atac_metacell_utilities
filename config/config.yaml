@@ -1,20 +1,20 @@
 scripts: "workflow/scripts/"
-output: "results/"
+output: # <Output directory here> 
 logs: "logs/"
 interactive_clean: True
 
-renv_loc: "/home/cjordan2/R/x86_64-pc-linux-gnu-library/4.1.0" # <path/to/user/R/library>
+renv_loc: # <path/to/user/R/library>
 
 anndata:
-    atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_atac_w_SEACells_meta.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_atac_meta_ad.h5ad"  #<<path/to/SEACell/ATAC/AnnData/here>
-    rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/tcell_dep_rna_w_SEACells_meta.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_meta_ad.h5ad" #<path/to/SEACell/RNA/AnnData/here>
-    sc_atac: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_atac_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_atac_ad.h5ad" 
-    sc_rna: "/fh/fast/setty_m/user/cjordan2/repositories/density-analysis/data/bm_rna_ad.h5ad" #"/fh/fast/setty_m/user/cjordan2/repositories/geneTF/data/test_rna_ad.h5ad" 
+    atac: # <path/to/SEACell/ATAC/AnnData/here>
+    rna: # <path/to/SEACell/RNA/AnnData/here>
+    sc_atac:  # <path/to/Single-cel/ATAC/AnnData/here>
+    sc_rna: # <path/to/Single-cel/RNA/AnnData/here>
     # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
     SEACell_label: "SEACell"
 peaks:
     width: 150
-    genome: "hg38"
+    genome: # Specify genome here
     meme_file: "data/cis-bp-tf-information.meme"
 
 ins_chip:
@@ -35,15 +35,15 @@ gene_peak_corr_cutoffs:
     min_peaks: 2
     
 diff_acc:
-    to_compare: "EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
-    group_variable: "celltype_combined"
+    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
+    cell_type_obs: # Specify obs which contains the cell type information .Eg: "celltype"
     
 peak_selection:
-    target: ["Bcells","proB"]
-    start: "HSC"
-    reference: 
+    target:  # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
+    start: # Stem cell type. Eg: "HSC"
+    reference: # Dictionary of reference/other cell types for comparison. Eg listed below
          Ery: "EryPre1"
          Mono: "Mono"
-    min_logFC: -0.25
+    min_logFC: 0
     max_logFC: 0.25
     
