@@ -1,11 +1,11 @@
 if __name__ == "__main__":
     import argparse
     desc = "Prepares peak file for downstream MOTIF analysis"
-    
+
     parser = argparse.ArgumentParser(
         description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    
+
     parser.add_argument(
         "--atac",
         metavar="AnnData",
@@ -13,7 +13,7 @@ if __name__ == "__main__":
         required=True,
         help="Path to ATAC AnnData.",
     )
-    
+
     parser.add_argument(
         "-o",
         "--outdir",
@@ -32,8 +32,10 @@ def make_peak_df(peaks_list):
 
     # Information about peaks
     chrom = peaks_list.str.split(':').str.get(0)
-    start = pd.Series(peaks_list.str.split(':').str.get(1)).str.split('-').str.get(0)
-    end = pd.Series(peaks_list.str.split(':').str.get(1)).str.split('-').str.get(1)
+    start = pd.Series(peaks_list.str.split(
+        ':').str.get(1)).str.split('-').str.get(0)
+    end = pd.Series(peaks_list.str.split(
+        ':').str.get(1)).str.split('-').str.get(1)
 
     # Positions
     peaks_df = pd.DataFrame()
@@ -42,7 +44,8 @@ def make_peak_df(peaks_list):
     peaks_df['chromEnd'] = end.astype(int)
 
     # Summit
-    peaks_df['summit'] = ((peaks_df['chromEnd'] - peaks_df['chromStart']) / 2).astype(int)
+    peaks_df['summit'] = (
+        (peaks_df['chromEnd'] - peaks_df['chromStart']) / 2).astype(int)
 
     # Score
     peaks_df['score'] = 1
@@ -52,15 +55,15 @@ def make_peak_df(peaks_list):
 
     return peaks_df
 
+
 def main(args):
     # Load data
     atac_ad = sc.read(args.atac)
 
     peaks_df = make_peak_df(atac_ad.var_names)
-    peaks_df.to_csv(args.outdir + 'peaks.bed', sep='\t', index=None, header=False)
-    
-    
+    peaks_df.to_csv(args.outdir + 'peaks.bed',
+                    sep='\t', index=None, header=False)
+
+
 if __name__ == "__main__":
     main(args)
-    
-    

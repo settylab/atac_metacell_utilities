@@ -7,35 +7,32 @@ output_dir = config["output"]
 # ---- Main Rule ---- #
 rule all:
     input:
-        gene_tf_dir = expand("{dirname}gtf_mats/", dirname=output_dir),
-        accessibility_dir = expand("{dirname}accessibility/", dirname=output_dir),
-        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
-        plot_dir = expand("{dirname}tf_plots/", dirname=output_dir)
-
+        chromvar_outdir = expand(
+            "{dirname}chromvar_output/", dirname=output_dir),
+        score_dir = expand("{dirname}peak_scores/", dirname=output_dir),
+        gene_x_tf_dir = expand("{dirname}gene_x_tf/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
     shell:
         "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
-        
+
 # ---- renv Rules ---- #
 rule renv_install:
     input:
         libloc = config['renv_loc']
     shell:
         """
-        ml R/4.1.0-foss-2020b
         Rscript workflow/scripts/install_renv.R {input.libloc}
         """
 
 rule renv_init_restore:
     shell:
         """
-        ml R/4.1.0-foss-2020b
         R -e 'renv::init(bare=TRUE)'
         R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
         """
-        
+
 # ---- Preparation Rules ---- #
 
 rule prepare_peak_file:
@@ -48,7 +45,7 @@ rule prepare_peak_file:
         expand("{dirname}peaks.bed", dirname=output_dir)
     shell:
         "python {input.script} --atac={input.atac} --outdir={params.out_dir}"
-    
+
 rule all_seqs:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
@@ -60,7 +57,6 @@ rule all_seqs:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
         """
-        ml R/4.1.0-foss-2020b
         Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
         """
 rule fimo:
@@ -68,39 +64,67 @@ rule fimo:
         meme = config["peaks"]["meme_file"],
         seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
-        fimo_dir = directory(expand("{dirname}fimo_result/", dirname=output_dir))
+        fimo_dir = directory(
+            expand("{dirname}fimo_result/", dirname=output_dir))
     log:
         out = config["logs"] + "fimo.out"
     shell:
         """
-        ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
-        fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-        rm output.fimo_dir/cisml.xml
+        # fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
+        # rm -f {output.fimo_dir}/cisml.xml
+
         """
 
 rule peak_tf:
     input:
-        fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
-        script = config["scripts"] + "peak_tf.py"
+        script = config["scripts"] + "peak_tf.py",
+        sc_atac = config["anndata"]["sc_atac"],
+    # params:
+        fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
+    conda:
+        "../envs/environment.yaml"
     output:
-        expand("{dirname}peak_x_tf.h5ad", dirname=output_dir) 
+        out_dir = directory(
+            expand("{dirname}peak_tf/", dirname=output_dir))
     shell:
-        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output_dir}"
+        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output.out_dir} --sc_atac={input.sc_atac}"
+
+
+rule diff_acc:
+    input:
+        script = config["scripts"] + "diff_acc.R",
+        pyscript = config["scripts"] + "diff_acc.py",
+        metacell_script = config["scripts"] + "meta_mtx.py",
+        atac = config["anndata"]["atac"],
+        sc_atac = config["anndata"]["sc_atac"],
+    params:
+        to_compare = config["diff_acc"]["to_compare"],
+        cell_type_obs = config["diff_acc"]["cell_type_obs"],
+    output:
+        out_dir = directory(expand("{dirname}diff_acc/", dirname=output_dir))
+    shell:
+        """
+        mkdir -p {output.out_dir}
+        python {input.metacell_script} --atac={input.atac} --sc_atac={input.sc_atac} --cell_type_obs={params.cell_type_obs} -o={output.out_dir}
+        Rscript {input.script} {output.out_dir} {params.to_compare} {params.cell_type_obs}
+        python {input.pyscript} --atac={input.atac} --to_compare={params.to_compare} --data_dir={output.out_dir}
+        """
 
 rule gp_corr:
     input:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
         script = config["scripts"] + "gp_corr.py",
-        gtf_file = expand("data/{genome}.gtf", genome=config["peaks"]["genome"])
+        gtf_file = expand("data/{genome}.gtf",
+                          genome=config["peaks"]["genome"])
     params:
         n_jobs = config["gene_peak_corr_config"]["n_jobs"],
         test_set = config["gene_peak_corr_config"]["test_set"],
         n_genes = config["gene_peak_corr_config"]["n_genes"],
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
-        
+
     output:
         gp_dir = directory(expand("{dirname}gp_corrs/", dirname=output_dir))
     shell:
@@ -111,23 +135,98 @@ rule gp_corr:
             --max_pval={params.max_pval}
         """
 
+# ---- Cell-type open peaks --- #
+rule ct_open_peaks:
+    input:
+        sc_atac = config["anndata"]["sc_atac"],
+    params:
+        cell_type_obs = config["diff_acc"]["cell_type_obs"]
+    output:
+        out_dir = directory(
+            expand("{dirname}ct_open_peaks/", dirname=output_dir))
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/open_peaks.py"
+
+
+# ---- Peak Selection Rule --- #
+rule peak_selection:
+    input:
+        sc_atac = config["anndata"]["sc_atac"],
+        meta_atac = config["anndata"]["atac"],
+        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
+        da_dir = expand("{dirname}diff_acc/", dirname=output_dir),
+        op_dir = expand("{dirname}ct_open_peaks/", dirname=output_dir),
+    params:
+        target = config["peak_selection"]["target"],
+        start = config["peak_selection"]["start"],
+        reference = config["peak_selection"]["reference"],
+        min_logFC = config["peak_selection"]["min_logFC"],
+        max_logFC = config["peak_selection"]["max_logFC"],
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+    output:
+        out_dir = directory(
+            expand("{dirname}peak_selection/", dirname=output_dir))
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/peak_selection.py"
+
+# --- Weighted average scoring rule --- #
+
+rule peak_scores:
+    input:
+        sc_atac = config["anndata"]["sc_atac"],
+        meta_atac = config["anndata"]["atac"],
+        sc_rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "primed_lin_scores.py",
+        peak_selection = expand("{dirname}peak_selection/", dirname=output_dir)
+    params:
+        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
+        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
+        min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"],
+        target = config["peak_selection"]["target"]
+    output:
+        out_dir =
+        directory(expand("{dirname}peak_scores/", dirname=output_dir))
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/primed_lin_scores.py"
+
+
 # ---- In Silico ChIP Rules ---- #
 rule compute_ins_chip:
     input:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
-        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        sc_atac = config["anndata"]["sc_atac"],
         script = config["scripts"] + "compute_ins_chip.py",
     params:
         verbose = config["ins_chip"]["verbose"],
     output:
-        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
+        insc_dir =
+        directory(expand("{dirname}ins_chip/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.insc_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} -o={output.insc_dir} {params.verbose}
+        python {input.script} --atac={input.atac} --rna={input.rna} --sc_atac={input.sc_atac} -o={output.insc_dir} {params.verbose}
+        touch "{output.insc_dir}/.ins_chip"
         """
-
+rule write_ins_chip:
+    input:
+        atac = config["anndata"]["sc_atac"],
+        rna = config["anndata"]["sc_rna"],
+        script = config["scripts"] + "write_ins_chip.py",
+        data_dir = output_dir + "ins_chip/",
+    params:
+        verbose = config["ins_chip"]["verbose"],
+    shell:
+        """
+        python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir}
+        """
 rule prep_chromvar:
     input:
         sc_atac = config["anndata"]["sc_atac"],
@@ -137,98 +236,58 @@ rule prep_chromvar:
         min_chip = config["ins_chip"]["min_chip_score"],
         min_peak_hits = config["ins_chip"]["min_peak_hits"]
     output:
-        chromvar_indir = directory(expand("{dirname}chromvar_input/", dirname=output_dir))
+        chromvar_indir = directory(
+            expand("{dirname}chromvar_input/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.chromvar_indir}
         python {input.script} --sc_atac={input.sc_atac} --ins_chip_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
-            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir} 
+            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir}
         """
 
 rule chromvar:
     input:
+        sc_rna = config["anndata"]["sc_rna"],
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
-        chromvar_indir = expand("{dirname}chromvar_input/", dirname=output_dir),
-        script = config["scripts"] + "run_chromvar.R"
+        chromvar_indir = expand(
+            "{dirname}chromvar_input/", dirname=output_dir),
+        script = config["scripts"] + "run_chromvar.R",
+        pyscript = config["scripts"] + "run_chromvar.py"
     params:
         genome = config["peaks"]["genome"]
     output:
-        chromvar_outdir = directory(expand("{dirname}chromvar_output/", dirname=output_dir))
+        chromvar_outdir = directory(
+            expand("{dirname}chromvar_output/", dirname=output_dir))
     shell:
         """
-        ml R/4.1.0-foss-2020b
         mkdir -p {output.chromvar_outdir}
         Rscript {input.script} {input.peak_file} {input.chromvar_indir} {output.chromvar_outdir} {params.genome}
-        """
-
-rule plot_tfs:
-    input:
-        sc_ad = config["anndata"]["sc_ad"],
-        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir),
-        script = config["scripts"] + "plot_tfs.py"
-    params:
-        vmax = config["plot_chromvar"]["vmax"],
-        embedding = config["plot_chromvar"]["embedding"],
-        tf_list = config["plot_chromvar"]["tf_list"],
-        obs_annos = config["plot_chromvar"]["obs_annos"]
-    output:
-        plot_dir = directory(expand("{dirname}tf_plots/", dirname=output_dir))
-    shell:
-        """
-        mkdir -p {output.plot_dir}
-        python {input.script} --sc_ad={input.sc_ad} --chromvar_outdir={input.chromvar_outdir} --vmax={params.vmax} \\
-            --embedding={params.embedding} --obs_annos {params.obs_annos} --tf_list {params.tf_list} -o={output.plot_dir} 
-        """
-
-# ---- Accessibility Rules ---- #
-rule acc_metric:
-    input:
-        atac = config["anndata"]["atac"],
-        gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
-        script = config["scripts"] + "acc_metrics.py",
-    params:
-        embedding = config["acc_metric"]["ld_embedding"],
-        read_len = config["acc_metric"]["read_length"],
-        n_nbors = config["acc_metric"]["op_nbors"],
-        op_pval = config["acc_metric"]["open_peak_pval"],
-        gp_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
-        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
-    output:
-        acc_dir = directory(expand("{dirname}accessibility/", dirname=output_dir))
-    shell:
-        """
-        mkdir -p {output.acc_dir}
-        python {input.script}  --atac={input.atac} --gp_corr={input.gp_dir} -o={output.acc_dir} \\
-             --embedding={params.embedding} --read_len={params.read_len} --n_nbors={params.n_nbors} \\
-             --op_pval={params.op_pval} --gp_pval={params.gp_pval} --min_corr={params.min_corr} \\
-             --min_peaks={params.min_peaks}
+        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
         """
 
 # ---- Computation Rule ---- #
-
 rule gene_x_tf:
     input:
+        sc_atac = config["anndata"]["sc_atac"],
+        sc_rna = config["anndata"]["sc_rna"],
         atac = config["anndata"]["atac"],
-        rna = config["anndata"]["rna"],
-        peak_tf = expand("{dirname}peak_x_tf.h5ad", dirname=output_dir),
+        ins_chip = expand("{dirname}ins_chip/", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
         script = config["scripts"] + "compute_gene_tf.py"
     params:
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
         min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
-    log:
-        out = config["logs"] + "gtf.out"
     output:
-        gtf_dir = directory(expand("{dirname}gtf_mats/", dirname=output_dir))
+        gtf_dir = directory(expand("{dirname}gene_x_tf/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.gtf_dir}
-        python {input.script} --atac={input.atac} --rna={input.rna} --peak_tf={input.peak_tf} \\
-            --gp_corr={input.gp_dir} --min_corr={params.min_corr} --max_pval={params.max_pval} \\
-            --min_peaks={params.min_peaks} -o={output.gtf_dir} 1> {log.out}
+        python {input.script} --atac={input.atac} --sc_atac={input.sc_atac} --sc_rna={input.sc_rna}\\
+         --min_corr={params.min_corr} --max_pval={params.max_pval} \\
+         --min_peaks={params.min_peaks} -o={output.gtf_dir}
         """
+
 
 # ---- Cleaning Rule ---- #
 rule clean:
