@@ -8,7 +8,7 @@ This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/sta
 
 ## Overview:
 
-Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View the [`Snakefile`](https://github.com/settylab/geneTF/blob/main/workflow/Snakefile) to see details on each rule.
+Below is a DAG showing the rule dependencies in the `snakemake` pipeline. View the [`Snakefile`](https://github.com/settylab/atac-metacell-utilites/blob/main/workflow/Snakefile) to see details on each rule.
 
 ![DAG of workflow](./dag.png)
 
@@ -244,9 +244,9 @@ For example, the following will run/re-run the `chromvar` rule and any of the al
 ```
 snakemake --cores 1 chromvar --allowed_rules peak_tf compute_ins_chip prep_chromvar
 ```
-When running this pipeline on an HPC system which uses `lmod` to load software, do not load snakemake as a module - this can cause conflicts where the Python version used by `snakemake` is the one provided by the module, not the `gene-TF` conda environment.
+When running this pipeline on an HPC system which uses `lmod` to load software, do not load snakemake as a module - this can cause conflicts where the Python version used by `snakemake` is the one provided by the module, not the `atac-metacell-utils` conda environment.
 
-To run using the snakemake version installed with `gene-TF`, make sure the `gene-TF` environment is active, then run the pipeline as follows:
+To run using the snakemake version installed with `atac-metacell-utils`, make sure the `atac-metacell-utils` environment is active, then run the pipeline as follows:
 
 ```
 python -m snakemake --cores 1 name-of-rule
