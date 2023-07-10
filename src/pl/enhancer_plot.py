@@ -427,9 +427,10 @@ def enhancer_plot(
     max_len = top_df["n_peaks"].max()
 
     # Use numpy's PTP (Peak-To-Peak) function to calculate range_size
-    range_size = np.ptp(np.append(top_df["logFC"].values, 0))
+    range_size = np.ptp(np.append(top_df["logFC"].values, 0)).astype(int)
 
-    ypaddings = np.linspace(0, max_len * range_size * point_distance, num=max_len)
+    ypaddings = np.linspace(0, int(max_len * range_size * point_distance), num=max_len)
+
 
     fontsize = _calculate_fontsize(ax, n_genes)
     kwargs["s"] = kwargs.get("s", fontsize)  # Set the size for scatter points
