@@ -427,7 +427,7 @@ def enhancer_plot(
     max_len = top_df["n_peaks"].max()
 
     # Use numpy's PTP (Peak-To-Peak) function to calculate range_size
-    range_size = np.ptp(np.append(top_df["logFC"].values, 0)).astype(int)
+    range_size = np.ptp(np.append(top_df["logFC"].values, 0))
 
     ypaddings = np.linspace(0, max_len * range_size * point_distance, num=max_len)
 
