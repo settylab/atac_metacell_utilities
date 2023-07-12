@@ -26,9 +26,23 @@ def preprocess_data(df, peak_colors, min_peaks, n_genes):
     top_df["index"] = np.arange(top_df.shape[0]) + 1
     return top_df, df
 
-def get_peak_deltas(ad, fate, all_deltas, gene_peak_scores, corr_cutoff = 0, invert_deltas = False):
+def get_peak_deltas(ad, all_deltas, gene_peak_scores, corr_cutoff = 0, invert_deltas = False):
+    """
+    Creates a dictionary with genes as keys and DataFrames of logFC differential accessibility of the correlated peaks as values.
+
+    Args:
+        ad (anndata.AnnData): AnnData object containing scRNA-seq data used to generate differential gene expression results.
+        all_deltas (pd.DataFrame): pd.DataFrame containing differential accessibility results from atac-metacell-utilities output.
+        gene_peak_scores (dict): dictionary with genes as keys and data frames of gene-peak correlations as values, from atac-metacell-utilities output.
+        corr_cutoff (int): Minimum correlation coefficient or peaks to pass filtering. Defaults to 0 to retain all positively correlated peaks.
+        invert_deltas(bool): Boolean value indicating if sign of differential accessibility values should be inverted. Defaults to False.
+
+    Returns: 
+        dict: a dictionary, with string keys corresponding to genes and pd.DataFrames of differential accessibility results for correlated peaks as values.
+
+    """
     dorc_peak_deltas = dict()
-    for gene in tqdm(ad.var_names, desc=fate, total=len(ad.var_names)):
+    for gene in tqdm(ad.var_names, total=len(ad.var_names)):
         dorc_peak_deltas[gene] = pd.Series(dtype='float64')
         peak_df = gene_peak_scores.get(gene)
         if peak_df is None or isinstance(peak_df, int):
