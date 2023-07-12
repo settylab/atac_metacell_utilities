@@ -291,5 +291,5 @@ Other log files can be accessed in the `.snakemake/log` directory.
 1. SEACells: https://www.nature.com/articles/s41587-023-01716-9
 2. In-silico ChIP: https://www.biorxiv.org/content/10.1101/2022.06.15.496239v1
 3. chromVAR: https://www.nature.com/articles/nmeth.4401
-4. Mellon: TBD
+4. Mellon: https://www.biorxiv.org/content/10.1101/2023.07.09.548272v2
 The custom MOTIF annotations are based off of *in silico ChIP-seq*, introduced by Argelaguet et al in [this paper.](https://www.biorxiv.org/content/10.1101/2022.06.15.496239v1)
