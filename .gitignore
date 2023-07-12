@@ -12,3 +12,5 @@ renv/lock/
 renv/python/
 renv/staging/
 __pycache__/
+data/*.h5ad
+
