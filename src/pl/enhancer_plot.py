@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, Colormap
-
+from tqdm.auto import tqdm
 
 def preprocess_data(df, peak_colors, min_peaks, n_genes):
     """
@@ -26,6 +26,22 @@ def preprocess_data(df, peak_colors, min_peaks, n_genes):
     top_df["index"] = np.arange(top_df.shape[0]) + 1
     return top_df, df
 
+def get_peak_deltas(ad, fate, all_deltas, gene_peak_scores, corr_cutoff = 0, invert_deltas = False):
+    dorc_peak_deltas = dict()
+    for gene in tqdm(ad.var_names, desc=fate, total=len(ad.var_names)):
+        dorc_peak_deltas[gene] = pd.Series(dtype='float64')
+        peak_df = gene_peak_scores.get(gene)
+        if peak_df is None or isinstance(peak_df, int):
+            continue
+        selected_peaks = peak_df[peak_df.index.isin(all_deltas.index)]
+        peak_df = peak_df[peak_df['cor'] >corr_cutoff]
+        if len(selected_peaks) == 0:
+            continue
+        dorc_peak_deltas[gene] = all_deltas[selected_peaks.index].sort_values()
+        if invert_deltas == True:
+            dorc_peak_deltas[gene] = -dorc_peak_deltas[gene]
+            dorc_peak_deltas[gene] = dorc_peak_deltas[gene].sort_values()
+    return dorc_peak_deltas
 
 def set_plot_axes(ax, n_genes):
     """
@@ -216,7 +232,7 @@ def peak_scatter_plot(
     if color_bar_bounds is not None:
         cax = ax.inset_axes(color_bar_bounds)
         cb = plt.colorbar(points, cax=cax)
-        cb.set_label("peak mean delta")
+        cb.set_label("peak logFC")
 
     return points
 
