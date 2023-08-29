@@ -2,18 +2,16 @@
 .snakemake
 ._dag.png
 .DS_Store
-<<<<<<< HEAD
 **/__pycache__/
 *.py[cod]
-=======
 */__pycache__/
->>>>>>> 1384bcec7fd21b92b2dd6e3203d5fc38ff522141
 renv/cellar/
 renv/library/
 renv/local/
 renv/lock/
 renv/python/
 renv/staging/
+<<<<<<< HEAD
 **/*.h5ad
 *data/
 *results/
