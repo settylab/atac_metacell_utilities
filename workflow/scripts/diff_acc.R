@@ -3,25 +3,28 @@ library(data.table)
 library(Matrix)
 library(SummarizedExperiment)
 library(edgeR)
+
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) < 3){
     stop("Please supply the directory containing the required data files, cell type variable name, and a vector of tuples of cell types to compare")
 } else {
-    data_dir <- args[1] #'celltype_combined'
-    to_compare <- args[2]  #c("Mono",  'HSC')
+    data_dir <- args[1] 
+    to_compare <- args[2]  
     group_variable <- args[3]
 }
+# Comparisons
 to_compare = strsplit(to_compare, as.character('/'))[[1]]
 to_compare = strsplit(to_compare, as.character(','), fixed = TRUE)
 
-print(to_compare)
 fname <- paste(data_dir, '/meta_atac_metadata.csv',  sep = "")
-print(fname)
 atac_metadata <- fread(paste(data_dir, '/meta_atac_metadata.csv' , sep = ""))
 
+# Load data
 peak_names <- fread(paste(data_dir, '/meta_atac_peaks.csv',  sep = ""))
 metacell_mtx <- readMM(paste(data_dir, '/meta_atac_X.mtx', sep = ""))
-# No user input below this line
+
+
+# edgeR code 
 #####################################
 peak_names <- unlist(peak_names$V2)
 peak_names <- peak_names[! peak_names %in% c('0')]
@@ -46,11 +49,12 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
     assay(sub_se,"logcounts") <- log(1e6*(sweep(assay(sub_se,"counts"),2,colSums(assay(sub_se,"counts")),"/"))+1)
 
 
+    cell_types <- colData(sub_se)[, group_variable]
     acc.dt <- data.table(feature = rownames(sub_se),
-                         detection_rate_groupA = rowMeans(assay(sub_se,"counts")[,sub_se$celltype_combined==to_compare[1]]>0) %>% round(2),
-                         detection_rate_groupB = rowMeans(assay(sub_se,"counts")[,sub_se$celltype_combined==to_compare[2]]>0) %>% round(2),
-                         mean_groupA = rowMeans(assay(sub_se[,sub_se$celltype_combined==to_compare[1]],"logcounts")) %>% round(2),
-                         mean_groupB = rowMeans(assay(sub_se[,sub_se$celltype_combined==to_compare[2]],"logcounts")) %>% round(2)
+                         detection_rate_groupA = rowMeans(assay(sub_se,"counts")[,cell_types==to_compare[1]]>0) %>% round(2),
+                         detection_rate_groupB = rowMeans(assay(sub_se,"counts")[,cell_types==to_compare[2]]>0) %>% round(2),
+                         mean_groupA = rowMeans(assay(sub_se[,cell_types==to_compare[1]],"logcounts")) %>% round(2),
+                         mean_groupB = rowMeans(assay(sub_se[,cell_types==to_compare[2]],"logcounts")) %>% round(2)
     )
 
     features.to.use <- acc.dt[detection_rate_groupA>=0.3 | detection_rate_groupB>=0.3,feature]
@@ -97,7 +101,9 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
     dev.off()
     }
 
+print('Performing differential analysis...')
 for (comparison in to_compare){
+    print(comparison)
     diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, as.vector(comparison), data_dir)
 }
 
