@@ -2,7 +2,7 @@ anndata==0.9.1
 appdirs==1.4.4
 attrs==23.1.0
 blosc2==2.0.0
-certifi==2023.5.7
+certifi==2023.7.22
 charset-normalizer==3.1.0
 cmake==3.26.4
 ConfigArgParse==1.5.5
