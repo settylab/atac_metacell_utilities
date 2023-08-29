@@ -126,6 +126,10 @@ def main(args):
     print('Saving anndata file ...')
     atac_ad.write(args.atac)
 
+    # CReate directory to mark completion
+    import os
+    os.makedirs(str(args.outdir), exist_ok=True)
+
 
 if __name__ == "__main__":
     main(args)
