@@ -91,32 +91,29 @@ def main(args):
     gp['peaks'] = gp.index.values
     gp['peaks'] = pd.Categorical(gp['peaks'], atac_sc_ad.var_names)
     gp['gene'] = pd.Categorical(gp['gene'], rna_sc_ad.var_names)
-
+    
+    # Binarize gene peak correlations
+    gp_binary = gp.copy()
+    gp_binary['cor'] = (gp_binary['cor'] != 0).astype(int)
+    
     # Construct sparse matrix
-    data = gp['cor'].values
-    row_ind = gp['gene'].values.codes
-    col_ind = gp['peaks'].values.codes
-    M = len(gp['gene'].values.categories)
-    N = len(gp['peaks'].values.categories)
+    data = gp_binary['cor'].values
+    row_ind = gp_binary['gene'].values.codes
+    col_ind = gp_binary['peaks'].values.codes
+    M = len(gp_binary['gene'].values.categories)
+    N = len(gp_binary['peaks'].values.categories)
     gene_X_peak = csr_matrix((data, (row_ind, col_ind)), [M, N])
 
     # Peak X TF matrix
     peak_X_tf = atac_sc_ad.varm['InSilicoChip']
 
     # Gene X TF matrix
-    # Weighted scores
     gene_X_tf = gene_X_peak.dot(peak_X_tf)
-    # Binary matrix for weighted average
-    weight_sums = gene_X_peak.dot((peak_X_tf > 0))
-
-    # Elementwise division
-    gene_X_tf_weighted = gene_X_tf.copy()
-    gene_X_tf_weighted.data = gene_X_tf.data / weight_sums.data
-
-    # Add results to anndata
-    rna_sc_ad.varm['geneXTF'] = pd.DataFrame(gene_X_tf_weighted.todense(),
-        index=rna_sc_ad.var_names, columns=atac_sc_ad.uns['InSilicoChipColumns'])
-
+    
+    rna_sc_ad.varm['geneXTF'] = pd.DataFrame(gene_X_tf.todense(),
+        index=rna_sc_ad.var_names,
+        columns=atac_sc_ad.uns['InSilicoChipColumns'])
+    
     # Saving resuls
     print('Saving results')
     rna_sc_ad.write(args.sc_rna)
