@@ -1,0 +1,51 @@
+scripts: "workflow/scripts/"
+output: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin_dynamics/data/retina/RGC/"
+logs: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin_dynamics/data/retina/RGC/logs"
+interactive_clean: True
+
+renv_loc: # <path/to/user/R/library>
+
+anndata:
+    atac: # <path/to/SEACell/ATAC/AnnData/here>
+    rna: # <path/to/SEACell/RNA/AnnData/here>
+    sc_atac: "/fh/fast/setty_m/user/cfinkbei/retina_data/D59/D59_multiome_ATAC_db_remv_tile_eigen_archr_peaks.h5")
+    sc_rna: "/fh/fast/setty_m/user/cfinkbei/retina_data/D59/D59_multiome_RNA_db_remv_eigen.h5"
+    # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
+    SEACell_label: "SEACell"
+peaks:
+    width: 150
+    genome: 'hg38'
+    meme_file: "data/cis-bp-tf-information.meme"
+
+ins_chip:
+    # set verbose to "--verbose" for True
+    verbose: ""
+    min_chip_score: 0.15
+    min_peak_hits: 30
+
+gene_peak_corr_config:
+    # set test_set to "--test_set" for True
+    n_jobs: 1
+    test_set: ""
+    n_genes: 20
+
+gene_peak_corr_cutoffs:
+    min_corr: 0.0
+    max_pval: 0.1
+    min_peaks: 2
+    
+diff_acc:
+    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
+    cell_type_obs: 'BIP.type' # Specify obs which contains the cell type information .Eg: "celltype"
+    
+peak_selection:
+    cell_type_obs: 'BIP.type'
+    target: 'RGC' # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
+    start: 'MPC' # stem cell type 
+    reference: # Dictionary of lineages: reference cell types
+        RGC: 'RGC'
+         HRZ: "HRZ"
+         CON: 'CON'
+    min_logFC: 0
+    max_logFC: 0.25
+    
