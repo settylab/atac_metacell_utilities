@@ -11,8 +11,8 @@ renv/local/
 renv/lock/
 renv/python/
 renv/staging/
-<<<<<<< HEAD
 **/*.h5ad
 *data/
 *results/
-
+.RData
+.Rhistory
