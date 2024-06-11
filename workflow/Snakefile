@@ -1,4 +1,5 @@
 import os
+import json
 
 configfile: "config/config.yaml"
 
@@ -12,7 +13,7 @@ rule all:
         score_dir = expand("{dirname}peak_scores/", dirname=output_dir),
         gene_x_tf_dir = expand("{dirname}gene_x_tf/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
-
+# Downloads hg38 GTF file.
 rule dl_hg38:
     shell:
         "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
@@ -38,11 +39,14 @@ rule renv_init_restore:
 rule prepare_peak_file:
     input:
         atac = config["anndata"]["atac"],
-        script = config["scripts"] + "prepare_peak_file.py"
     params:
         out_dir = output_dir
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
+    conda:
+        "../envs/environment.yaml"
+    script:
+       "scripts/prepare_peak_file.py"
     shell:
         "python {input.script} --atac={input.atac} --outdir={params.out_dir}"
 
@@ -74,23 +78,32 @@ rule fimo:
         # rm -f {output.fimo_dir}/cisml.xml
 
         """
+# ----- Peak-TF matrix rule ---- #
+# Creates a peaks X TF AnnData with FIMO scores.
+
+## Inputs:
+## peaks: Path to peaks.bed file.
+## sc_atac: Path to ATAC single-cell AnnData, common obs with RNA. FIMO results will stored in atac_ad.varm. Can also be path to ATAC modality of a MuData object.
+## Params:
+## fimo_dir: Path to FIMO output directory.
+## Outputs:
+## out_dir: path to a peak_tf directory to mark completion.
 
 rule peak_tf:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
-        script = config["scripts"] + "peak_tf.py",
         sc_atac = config["anndata"]["sc_atac"],
-    # params:
+    params:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
     conda:
         "../envs/environment.yaml"
     output:
         out_dir = directory(
             expand("{dirname}peak_tf/", dirname=output_dir))
-    shell:
-        "python {input.script} --peak_file={input.peaks} --fimo_res={input.fimo_dir} -o={output.out_dir} --sc_atac={input.sc_atac}"
+    script:
+        "scripts/peak_tf.py"
 
-
+# ---- Differential accessibility ---- #
 rule diff_acc:
     input:
         script = config["scripts"] + "diff_acc.R",
@@ -99,17 +112,19 @@ rule diff_acc:
         atac = config["anndata"]["atac"],
         sc_atac = config["anndata"]["sc_atac"],
     params:
-        to_compare = config["diff_acc"]["to_compare"],
-        cell_type_obs = config["diff_acc"]["cell_type_obs"],
+        cell_type_obs = config["peak_selection"]["cell_type_obs"],
+        reference = config["peak_selection"]["reference"],
+        start = config["peak_selection"]["start"]
     output:
         out_dir = directory(expand("{dirname}diff_acc/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.out_dir}
         python {input.metacell_script} --atac={input.atac} --sc_atac={input.sc_atac} --cell_type_obs={params.cell_type_obs} -o={output.out_dir}
-        Rscript {input.script} {output.out_dir} {params.to_compare} {params.cell_type_obs}
+        Rscript {input.script} {output.out_dir} '{json.dumps(config)} {params.cell_type_obs}
         python {input.pyscript} --atac={input.atac} --to_compare={params.to_compare} --data_dir={output.out_dir}
         """
+# ---- Gene-peak correlations ---- #
 
 rule gp_corr:
     input:
@@ -189,8 +204,7 @@ rule peak_scores:
         min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"],
         target = config["peak_selection"]["target"]
     output:
-        out_dir =
-        directory(expand("{dirname}peak_scores/", dirname=output_dir))
+        out_dir = directory(expand("{dirname}peak_scores/", dirname=output_dir))
     conda:
         "../envs/environment.yaml"
     script:
@@ -207,8 +221,7 @@ rule compute_ins_chip:
     params:
         verbose = config["ins_chip"]["verbose"],
     output:
-        insc_dir =
-        directory(expand("{dirname}ins_chip/", dirname=output_dir))
+        insc_dir = directory(expand("{dirname}ins_chip/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.insc_dir}
@@ -266,6 +279,26 @@ rule chromvar:
         """
 
 # ---- Computation Rule ---- #
+
+# This rule processes single-cell ATAC-seq and RNA-seq data to identify correlations between gene expression
+# and transcription factor binding activities.
+
+## Inputs:
+## sc_atac: Path to single-cell ATAC-seq AnnData. Can also be path to the ATAC-seq modality of a MuData object.
+## sc_rna: Path to single-cell RNA-seq AnnData. Can also be path to the RNA-seq modality of a MuData object.
+## atac: Path to processed ATAC-seq AnnData.
+## ins_chip: Directory path containing insulation scores from ChIP-seq analysis.
+## gp_dir: Directory path containing gene-peak correlations.
+## script: Path to the Python script that computes gene-transcription factor correlations.
+
+## Parameters:
+## min_corr: Minimum correlation coefficient to consider for significance in gene-peak associations.
+## max_pval: Maximum p-value to consider for gene-peak associations.
+## min_peaks: Minimum number of peaks required for a gene to be considered in the analysis.
+
+## Outputs:
+## gtf_dir: Directory where the results of gene-transcription factor interaction analysis are stored.
+
 rule gene_x_tf:
     input:
         sc_atac = config["anndata"]["sc_atac"],

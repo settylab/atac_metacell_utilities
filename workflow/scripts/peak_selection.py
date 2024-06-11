@@ -1,4 +1,5 @@
 import scanpy as sc
+import mudata as md
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
@@ -8,8 +9,8 @@ def main():
 
     # Load data
     print('Loading anndata...')
-    atac_ad = sc.read(snakemake.input["sc_atac"])
-    atac_meta_ad = sc.read(snakemake.input["meta_atac"])
+    atac_ad = md.read(snakemake.input["sc_atac"])
+    atac_meta_ad = md.read(snakemake.input["meta_atac"])
 
     # set target lineage and cell type
     target = snakemake.params["target"]
@@ -93,7 +94,7 @@ def main():
     atac_ad.var[f'{target_lineage}_lineage_specific'] = atac_ad.var_names.isin(lin_spec_peaks)
 
     print('Saving')
-    atac_ad.write(snakemake.input["sc_atac"])
+    md.write(snakemake.input["sc_atac"], atac_ad.write)
 
     # CReate directory to mark completion
     import os

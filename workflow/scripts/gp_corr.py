@@ -90,14 +90,15 @@ if __name__ == "__main__":
 import scanpy as sc
 import SEACells
 import pandas as pd
+import mudata as md
 from tqdm.auto import tqdm
 
 
 def main(args):
 
     print('Loading data...')
-    atac_ad = sc.read(args.atac)
-    rna_ad = sc.read(args.rna)
+    atac_ad = md.read(args.atac)
+    rna_ad = md.read(args.rna)
     if args.test_set:
         gene_set = rna_ad.var_names[:args.n_genes]
     else:
@@ -124,7 +125,7 @@ def main(args):
 
     # Write anndata file
     print('Saving anndata file ...')
-    atac_ad.write(args.atac)
+    md.write(args.atac, atac_ad)
 
     # CReate directory to mark completion
     import os

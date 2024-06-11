@@ -11,7 +11,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC single cell AnnData, common obs with RNA",
+        help="Path to ATAC single cell AnnData, common obs with RNA. Can also be path to ATAC modality of MuData object.",
     )
     
     parser.add_argument(
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to RNA single cell AnnData, common obs with ATAC",
+        help="Path to RNA single cell AnnData, common obs with ATA. Can also be path to RNA modality of a MuData object.",
     )
     parser.add_argument(
         "--datadir",
@@ -31,12 +31,14 @@ if __name__ == "__main__":
     
 import pandas as pd
 import scanpy as sc
+import mudata as md
 import numpy as np
 from scipy.io import mmread
 from itertools import product
+
 def main(args):
-    atac_ad = sc.read_h5ad(args.atac)
-    rna_ad = sc.read_h5ad(args.rna)
+    atac_ad = md.read(args.atac)
+    rna_ad = md.read(args.rna)
     insc_mat = mmread(args.datadir+'/ins_chip.mtx')
     tf_names = pd.read_csv(args.datadir +'/tf_names.csv')
     tf_names = tf_names.iloc[:,0]
@@ -46,7 +48,7 @@ def main(args):
     atac_ad.varm["in_silico_ChIP"]=insc_df.values
     atac_ad.uns['in_silico_ChIP_columns'] = list(insc_df.columns)
     print(f"writing in silico ChIP matrix to ATAC AnnData...")
-    atac_ad.write_h5ad(args.atac)
+    md.write(args.atac, atac_ad)
     #save TF targets to 
     near_targets = dict()
     target_genes = rna_ad[:,rna_ad.var['upregulated_genes']].var_names
@@ -66,7 +68,7 @@ def main(args):
         rna_ad.obs[col] = rna_ad.obs[col].astype(str).astype("category")
     rna_ad.varm['TF_targets'] = near_target_genes.astype(int).values
     rna_ad.uns['TF_targets_columns'] = list(target_genes.astype(str))
-    rna_ad.write_h5ad(args.rna)
+    md.write(args.rna, rna_ad)
     
     
 if __name__ == "__main__":

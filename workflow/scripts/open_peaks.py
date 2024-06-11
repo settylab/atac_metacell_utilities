@@ -1,4 +1,5 @@
 import scanpy as sc
+import mudata as md
 import SEACells
 import pandas as pd
 import numpy as np
@@ -8,7 +9,7 @@ def main():
 
     # Load data
     print('Loading data...')
-    atac_sc_ad = sc.read(snakemake.input["sc_atac"])
+    atac_sc_ad = md.read(snakemake.input["sc_atac"])
     group_variable = snakemake.params['cell_type_obs']
 
     # Open peaks per cell type
@@ -34,7 +35,7 @@ def main():
                                                 columns=ct_ad.obs_names, index=atac_sc_ad.var_names)
 
     # Save
-    atac_sc_ad.write(snakemake.input["sc_atac"])
+    md.write(snakemake.input["sc_atac"],  atac_sc_ad)
 
     # CReate directory to mark completion
     import os

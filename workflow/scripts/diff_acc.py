@@ -14,11 +14,16 @@ if __name__ == "__main__":
         help="Path to ATAC meta-cell AnnData, common obs with RNA",
     )
     parser.add_argument(
-        "--to_compare",
+        "--start",
         type=str,
         required=True,
-        help="string of cell type comparisons for differential accessibility- groups of 2 are separated by semi-colons," +
-        "comma separation within groups.",
+        help="string corresponding to cell type of the starting/stem cell type.",
+    )
+    parser.add_argument(
+        "--reference",
+        type=dict,
+        required=True,
+        help="dict of lineages matched to mature cell types.",
     )
     parser.add_argument(
         "--data_dir",
@@ -30,31 +35,42 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 import scanpy as sc
+import muata as md
 import pandas as pd
+from itertools import product
 
-
+def get_non_target_keys(my_dict, target):
+    # Extract all keys
+    all_keys = list(my_dict.keys())
+    
+    # Filter out the key specified by the user
+    remaining_keys = [key for key in all_keys if key != target]
+    
+    # Return the remaining keys
+    return remaining_keys
+    
 def main(args):
     # Arguments
     to_compare = args.to_compare.split('/')
     data_dir = args.data_dir
 
     # Load anndata
-    atac_ad = sc.read(args.atac)
-
-    # Load diff results and save to anndata
-    for i in range(len(to_compare)):
-        # Cell types
-        to_compare[i] = to_compare[i].split(',')
-
-        # Diff results
-        df = pd.read_csv(data_dir + f"/{to_compare[i][0]}_{to_compare[i][1]}_diff_acc.tsv", sep="\t")
-        df.index = df['feature']
-
-        # Add to anndata
-        atac_ad.varm[f'{to_compare[i][0]}_{to_compare[i][1]}_diff_acc'] = df.loc[atac_ad.var_names, :]
+    atac_ad = md.read(args.atac)
+    for key in args.reference:
+        reference = get_non_target_keys(args.reference, key)
+        to_compare = product(reference, [start, key])
+        # Load diff results and save to anndata
+        for ct_1, ct_2 in range(len(to_compare)):
+    
+            # Diff results
+            df = pd.read_csv(data_dir + f"/{ct_1}_{ct_2}_diff_acc.tsv", sep="\t", index_col = "feature")
+            #df.index = df['feature']
+    
+            # Add to anndata
+            atac_ad.varm[f'{ct_1}_{ct_2}_diff_acc'] = df.loc[atac_ad.var_names, :]
 
     # Save anndata
-    atac_ad.write(args.atac)
+    md.write(args.atac, atac_ad)
 
 
 if __name__ == "__main__":

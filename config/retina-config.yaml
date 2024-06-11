@@ -34,10 +34,6 @@ gene_peak_corr_cutoffs:
     max_pval: 0.1
     min_peaks: 2
     
-diff_acc:
-    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
-    cell_type_obs: 'BIP.type' # Specify obs which contains the cell type information .Eg: "celltype"
-    
 peak_selection:
     cell_type_obs: 'BIP.type'
     target: 'RGC' # List of cell-types for the target lineage. Eg: ["Bcells","proB"]

@@ -66,6 +66,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 import pandas as pd
+import mudata as md
 import scanpy as sc
 from scipy.sparse import csr_matrix
 
@@ -73,9 +74,9 @@ from scipy.sparse import csr_matrix
 def main(args):
     # Load data
     print('Loading data')
-    atac_sc_ad = sc.read(args.sc_atac)
-    atac_mc_ad = sc.read(args.atac)
-    rna_sc_ad = sc.read(args.sc_rna)
+    atac_sc_ad = md.read(args.sc_atac)
+    atac_mc_ad = md.read(args.atac)
+    rna_sc_ad = md.read(args.sc_rna)
 
     # Assemble necessary matrices
     print('Computing gene TF relationships')
@@ -119,7 +120,7 @@ def main(args):
 
     # Saving resuls
     print('Saving results')
-    rna_sc_ad.write(args.sc_rna)
+    md.write(args.sc_rna, rna_sc_ad)
 
     # CReate directory to mark completion
     import os

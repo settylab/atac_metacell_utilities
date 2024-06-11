@@ -11,7 +11,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC single-cell AnnData",
+        help="Path to ATAC single-cell AnnData. Can also be path to ATAC modality of MuData object.",
     )
 
     parser.add_argument(
@@ -51,6 +51,7 @@ if __name__ == "__main__":
 
 import pandas as pd
 import scipy.io
+import mudata as md
 from scipy.sparse import csr_matrix
 import scanpy as sc
 
@@ -66,7 +67,7 @@ def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
 
 def main(args):
     # Load ATAC data and reconstruct in-silico chip matrix
-    atac_sc_ad = sc.read(args.sc_atac)
+    atac_sc_ad = md.read(args.sc_atac)
 
     # insilio Chip results
     insc_df = pd.DataFrame(atac_sc_ad.varm['InSilicoChip'].todense(),

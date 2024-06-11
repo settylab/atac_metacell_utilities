@@ -11,7 +11,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
+        help="Path to ATAC MC AnnData, common obs with RNA. Can also be a path to the RNA modality of a MuData object.",
     )
 
     parser.add_argument(
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to RNA MC AnnData, common obs with ATAC",
+        help="Path to RNA MC AnnData, common obs with ATAC. Can also be a path to the RNA modality of a MuData object.",
     )
 
     parser.add_argument(
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         metavar="AnnData",
         type=str,
         required=True,
-        help="Path to ATAC single-cell AnnData, common obs with RNA. FIMO results will stored in atac_ad.varm",
+        help="Path to ATAC single-cell AnnData, common obs with RNA. FIMO results will stored in atac_ad.varm. Can also be a path to the RNA modality of a MuData object.",
     )
 
     parser.add_argument(
@@ -55,6 +55,7 @@ import scipy.io
 from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
 import scanpy as sc
+import mudata as md
 import numba as nb
 import os
 
@@ -159,9 +160,9 @@ def main(args):
 
     # Load data
     print('Load data...')
-    atac_ad = sc.read(args.atac)
-    rna_ad = sc.read(args.rna)
-    atac_sc_ad = sc.read(args.sc_atac)
+    atac_ad = md.read(args.atac)
+    rna_ad = md.(args.rna)
+    atac_sc_ad = md.read(args.sc_atac)
 
     # Reconstruction peak X TF
     peak_x_tf = sc.AnnData(atac_sc_ad.varm['FIMO'])
@@ -192,7 +193,7 @@ def main(args):
     atac_sc_ad.varm['InSilicoChip_Corrs'] = csr_matrix(corr_mat.loc[atac_sc_ad.var_names, :].values)
     atac_sc_ad.varm['InSilicoChip'] = csr_matrix(insc_mat.loc[atac_sc_ad.var_names, :].values)
     atac_sc_ad.uns['InSilicoChipColumns'] = np.array(all_tfs)
-    atac_sc_ad.write(args.sc_atac)
+    md.write(args.sc_atac, atac_sc_ad)
 
     ## Create directory to signify completion
     os.makedirs(args.outdir, exist_ok=True)

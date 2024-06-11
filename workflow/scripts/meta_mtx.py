@@ -51,14 +51,15 @@ if __name__ == "__main__":
 
 import scanpy as sc
 import pandas as pd
+import mudata as md
 from scipy import io
 
 
 def main(args):
     # Load data
     print('Loading data...')
-    atac_sc_ad = sc.read(args.sc_atac)
-    atac_meta_ad = sc.read(args.atac)
+    atac_sc_ad = md.read(args.sc_atac)
+    atac_meta_ad = md.read(args.atac)
     seacell_label = args.seacell_label
     seacells = atac_sc_ad.obs[seacell_label]
     group_variable = args.cell_type_obs
