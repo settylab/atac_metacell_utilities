@@ -161,13 +161,18 @@ def main(args):
     # Load data
     print('Load data...')
     atac_ad = md.read(args.atac)
-    rna_ad = md.(args.rna)
+    rna_ad = md.read(args.rna)
     atac_sc_ad = md.read(args.sc_atac)
 
     # Reconstruction peak X TF
-    peak_x_tf = sc.AnnData(atac_sc_ad.varm['FIMO'])
-    peak_x_tf.var_names = atac_sc_ad.uns['FIMOColumns']
-    peak_x_tf.obs_names = atac_sc_ad.var_names
+    try:
+        peak_x_tf = sc.AnnData(atac_sc_ad.varm['FIMO'])
+        peak_x_tf.var_names = atac_sc_ad.uns['FIMOColumns']
+        peak_x_tf.obs_names = atac_sc_ad.var_names
+    except KeyError as err:
+        print("FIMO matrix not found in annData! rule `peak-tf` may not have completed successfully.")
+        print(err)
+        raise
 
     # Filter genes for ones that have FIMO score
     gene_set = rna_ad.var_names

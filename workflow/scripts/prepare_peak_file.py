@@ -33,7 +33,7 @@ def make_peak_df(peaks_list):
 
 def main():
     # Load data
-    atac_ad = md.read(snakemake.input.atac)
+    atac_ad = md.read(snakemake.params.atac)
     peaks_df = make_peak_df(atac_ad.var_names)
     peaks_df.to_csv(snakemake.params.out_dir + 'peaks.bed',
                     sep='\t', index=None, header=False)

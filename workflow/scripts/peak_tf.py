@@ -69,10 +69,10 @@ def main():
 
     # Load and save in anndata
     print('Saving results to anndata')
-    atac_sc_ad = md.read(snakemake.input.sc_atac)
+    atac_sc_ad = md.read(snakemake.params.sc_atac)
     atac_sc_ad.varm['FIMO'] = pxtf_ad[atac_sc_ad.var_names, :].X
     atac_sc_ad.uns['FIMOColumns'] = np.array(pxtf_ad.var_names)
-    md.write(snakemake.input.sc_atac, atac_sc_ad)
+    md.write(snakemake.params.sc_atac, atac_sc_ad)
 
     # CReate directory to mark completion
     import os

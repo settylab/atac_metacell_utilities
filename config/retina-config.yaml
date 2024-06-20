@@ -1,15 +1,18 @@
 scripts: "workflow/scripts/"
-output: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin_dynamics/data/retina/RGC/"
-logs: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin_dynamics/data/retina/RGC/logs"
+output: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/"
+logs: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/logs"
 interactive_clean: True
 
-renv_loc: # <path/to/user/R/library>
+renv_loc: "/home/cjordan2/R/x86_64-pc-linux-gnu-library/4.1.0" 
+mudata:
+    meta: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_meta_multiome.h5mu"
+    sc: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_multiome.h5mu"
 
 anndata:
-    atac: # <path/to/SEACell/ATAC/AnnData/here>
-    rna: # <path/to/SEACell/RNA/AnnData/here>
-    sc_atac: "/fh/fast/setty_m/user/cfinkbei/retina_data/D59/D59_multiome_ATAC_db_remv_tile_eigen_archr_peaks.h5")
-    sc_rna: "/fh/fast/setty_m/user/cfinkbei/retina_data/D59/D59_multiome_RNA_db_remv_eigen.h5"
+    atac: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_meta_multiome.h5mu/ATAC"
+    rna: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_meta_multiome.h5mu/RNA"
+    sc_atac: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_multiome.h5mu/ATAC"
+    sc_rna: "/fh/fast/setty_m/user/cjordan2/repositories/chromatin-dynamics/data/retina/retina_D59_multiome.h5mu/RNA"
     # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
     SEACell_label: "SEACell"
 peaks:
@@ -35,13 +38,12 @@ gene_peak_corr_cutoffs:
     min_peaks: 2
     
 peak_selection:
-    cell_type_obs: 'BIP.type'
-    target: 'RGC' # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
+    cell_type_obs: 'celltype'
     start: 'MPC' # stem cell type 
     reference: # Dictionary of lineages: reference cell types
-        RGC: 'RGC'
-         HRZ: "HRZ"
-         CON: 'CON'
+        RGC : 'RGC_late'
+        HRZ : "HRZ"
+        CON : 'CON'
     min_logFC: 0
     max_logFC: 0.25
     

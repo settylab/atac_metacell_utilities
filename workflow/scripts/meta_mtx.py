@@ -1,81 +1,38 @@
-if __name__ == "__main__":
-    import argparse
-    desc = "Output ATAC metacell pseudo-bulk data as .mtx  and metadata as .csv for analysis in EdgeR."
-
-    parser = argparse.ArgumentParser(
-        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-    parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
-    )
-    parser.add_argument(
-        "--sc_atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC single-cell AnnData, common obs with RNA",
-    )
-    parser.add_argument(
-        "-o",
-        metavar="path",
-        type=str,
-        required=True,
-        help="Destination path for output files",
-    )
-    parser.add_argument(
-        "--cell_type_obs",
-        type=str,
-        required=True,
-        help="Cell type (or other column) name in .obs of single-cell anndata for grouping ",
-    )
-    parser.add_argument(
-        "--seacell_label",
-        type=str,
-        default="SEACell",
-        help="SEACell column name in .obs of single-cell anndata",
-    )
-
-    parser.add_argument(
-        "--modality",
-        type=str,
-        default="atac",
-        help="Change file labels when using rule with different modality.",
-    )
-
-    args = parser.parse_args()
-
-
 import scanpy as sc
 import pandas as pd
 import mudata as md
 from scipy import io
+import os
+import json
 
-
-def main(args):
+def main():
     # Load data
     print('Loading data...')
-    atac_sc_ad = md.read(args.sc_atac)
-    atac_meta_ad = md.read(args.atac)
-    seacell_label = args.seacell_label
+    atac_sc_ad = md.read(snakemake.params.sc_atac)
+    atac_meta_ad = md.read(snakemake.params.atac)
+    seacell_label = snakemake.params.seacell_label
     seacells = atac_sc_ad.obs[seacell_label]
-    group_variable = args.cell_type_obs
-
+    group_variable = snakemake.params.cell_type_obs
+    out_dir = snakemake.params.out_dir
     # find top cell type in each metacell
     top_ct = atac_sc_ad.obs[group_variable].groupby(
         seacells).value_counts().groupby(level=0, group_keys=False).head(1)
     atac_meta_ad.obs[group_variable] = top_ct[atac_meta_ad.obs_names].index.get_level_values(
         1)
-
+    
     # Export data for edgeR
-    print('Exporting data...')
-    io.mmwrite(target=f"{args.o}/meta_{args.modality}_X.mtx", a=atac_meta_ad.layers['raw'])
-    pd.Series(atac_meta_ad.obs_names).to_csv(f"{args.o}/meta_{args.modality}_cells.csv")
-    pd.Series(atac_meta_ad.var_names).to_csv(f"{args.o}/meta_{args.modality}_peaks.csv")
-    atac_meta_ad.obs.to_csv(f"{args.o}/meta_{args.modality}_metadata.csv")
-
+    print(f'Exporting data to {out_dir}...')
+    
+    # Create the directory, including all intermediate-level directories if necessary
+    os.makedirs(str(out_dir), exist_ok = True)
+    
+    io.mmwrite(target=snakemake.output.out_x, a=atac_meta_ad.layers['raw'])
+    pd.Series(atac_meta_ad.obs_names).to_csv(snakemake.output.out_obs, header = False)
+    pd.Series(atac_meta_ad.var_names).to_csv(snakemake.output.out_var, header = False)
+    atac_meta_ad.obs.to_csv(snakemake.output.out_metadata)
+    
+    
+    with open (snakemake.output.json, 'w') as file:
+        json.dump(snakemake.params.reference, file)
 if __name__ == "__main__":
-    main(args)
+    main()

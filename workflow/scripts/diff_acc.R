@@ -1,17 +1,43 @@
-library(tidyverse)
-library(data.table)
-library(Matrix)
-library(SummarizedExperiment)
-library(edgeR)
-library(rjson)
+suppressMessages({
+    library(tidyverse)
+    library(data.table)
+    library(Matrix)
+    library(SummarizedExperiment)
+    library(edgeR)
+    library(rjson)
+})
+
 args = commandArgs(trailingOnly=TRUE)
-if (length(args) < 3){
-    stop("Please supply the directory containing the required data files, cell type variable name, and a vector of tuples of cell types to compare")
+if (length(args) < 4){
+    stop("Please supply the directory containing the required data files, cell type variable name, starting cell type, and a path to a JSON file of cell types to compare")
 } else {
     data_dir <- args[1] 
-    reference <- fromJSON(args[2])  
+    reference <- fromJSON(file = args[2])  
     start <- args[3]
     group_variable <- args[4]
+}
+
+get_non_target_keys = function(my_list, target) {
+  # Extract all keys
+  all_keys <- names(my_list)
+  
+  # Filter out the key specified by the user
+  remaining_keys <- all_keys[all_keys != target]
+  
+  # Return the remaining keys
+  return(remaining_keys)
+}
+to_compare = list()
+for(key in names(reference)) {
+    targets = c(reference[[key]], start)
+    ref = reference[get_non_target_keys(reference, key)]
+    result = expand.grid(ref, targets)
+    result$Var2 <- as.character(result$Var2)
+    for (row in 1:nrow(as.data.frame(result, stringsAsFactors = FALSE)) ){ 
+        # Extract the row as a vector
+        current_row <- as.vector(unlist(result[row,]))
+        to_compare[[length(to_compare)+1]] <- current_row
+    }   
 }
 
 fname <- paste(data_dir, '/meta_atac_metadata.csv',  sep = "")
@@ -28,10 +54,9 @@ peak_names <- peak_names[! peak_names %in% c('0')]
 metacell_mtx <- as(metacell_mtx, "dgCMatrix")
 metacell_mtx <- t(metacell_mtx)
 
-
 metacell_se <- SummarizedExperiment(assays=metacell_mtx)
 colnames(metacell_se) <- atac_metadata$V1
-
+rownames(metacell_se) <- peak_names
 
 # edgeR code 
 #####################################
@@ -65,6 +90,7 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
     design <- model.matrix(~cdr+sub_se$group)
 
     # Estimate dispersions
+    # these are not counts so the min row sum setting can be too high and filter out data with enough counts. this can probably be set to 0 since we're aggregating prior to DE
     atac_metacells.dge  <- estimateDisp(atac_metacells.dge,design)
 
     # Fit GLM
@@ -98,31 +124,10 @@ diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compa
     legend("bottomleft",legend=c(sprintf("%s peaks", to_compare[1]),sprintf("%s peaks", to_compare[2])), pch=16,col=c("red","dodgerblue"))
 
     dev.off()
-    }
+}
 
 print('Performing differential analysis...')
-# Comparisons
-get_non_target_keys = function(my_list, target) {
-  # Extract all keys
-  all_keys <- names(my_list)
-  
-  # Filter out the key specified by the user
-  remaining_keys <- all_keys[all_keys != target]
-  
-  # Return the remaining keys
-  return(remaining_keys)
+for (comparison in to_compare){
+    print(comparison)
+    diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, as.vector(comparison), data_dir)
 }
-for(target in names(references)){
-    targets = c(target, start)
-    references = get_non_target_keys(target)
-    result = expand.grid(references, targets)
-    to_compare = data.frame(apply(result, 1, function(x) as.vector(x)))
-    for (row in 1:nrow(data.frame(to_compare))) { 
-        print(row)
-        diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, as.vector(row), data_dir)
-    }   
-}
-
-
-
-

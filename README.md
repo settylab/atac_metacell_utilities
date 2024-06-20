@@ -103,8 +103,8 @@ config/config.yaml
 
 In order for the pipeline to run, you will have to set the following parameters:
 
-* `atac` *str* : Path to the SEACell-level ATAC AnnData with normalized and log-transformed counts
-* `rna` *str* : Path to the SEACell-level RNA AnnData with normalized and log-transformed counts
+* `atac` *str* : Path to the SEACell-level ATAC AnnData with raw counts in `ad.raw`. TF-IDF normalized counts should be in a layer: `ad.layers['tf-idf']`.
+* `rna` *str* : Path to the SEACell-level RNA AnnData with normalized and log-transformed counts.
 * `sc_atac` *str* : Path to the single-cell-level ATAC AnnData with matching peaks to `atac` AnnData. Must have `nFrags` annotation in `.obs`. 
 * `sc_rna` *str* : Path to the single-cell-level RNA AnnData used to generate the SEACell-level RNA data. 
 
