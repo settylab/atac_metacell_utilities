@@ -16,7 +16,7 @@ def get_non_target_celltypes(my_dict, target):
     
 def main():
     # Arguments
-    data_dir = snakemake.input.out_dir
+    data_dir = snakemake.params.out_dir
     reference = snakemake.params.reference
     start = snakemake.params.start
     # Load anndata

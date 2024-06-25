@@ -37,6 +37,13 @@ if __name__ == "__main__":
         default=30,
         metavar="int"
     )
+    parser.add_argument(
+        "--n_frags",
+        type=int,
+        help="column in .obs corresponding to fragments/cell",
+        default='nFrags',
+        metavar="str"
+    )
 
     parser.add_argument(
         "-o",
@@ -87,7 +94,7 @@ def main(args):
 
     # Peak counts
     scipy.io.mmwrite(args.outdir + '/sc_atac_counts.mtx', atac_sc_ad.X)
-    atac_sc_ad.obs['nFrags'].to_csv(
+    atac_sc_ad.obs[args.n_frags].to_csv(
         args.outdir + '/sc_nfrags.csv', index=True, header=['nFrags'])
 
 

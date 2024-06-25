@@ -25,6 +25,7 @@ ins_chip:
     verbose: ""
     min_chip_score: 0.15
     min_peak_hits: 30
+    n_frags_label: 'nCount.ATAC'
 
 gene_peak_corr_config:
     # set test_set to "--test_set" for True

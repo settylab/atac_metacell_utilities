@@ -125,15 +125,16 @@ rule fimo:
 rule peak_tf:
     input:
         peaks = output_dir + "peaks.bed", 
-        script = config['scripts'] + "peak_tf.py"
+        script = config['scripts'] + "peak_tf.py",
+        mdata = config["mudata"]["meta"],
+        fimo_file = output_dir + "fimo_result/fimo.tsv"
     params:
         sc_atac = config["anndata"]["sc_atac"],
         fimo_dir = output_dir + "fimo_result/",
     conda:
         "../envs/environment.yaml"
     output:
-        out_dir = directory(
-            expand("{dirname}peak_tf/", dirname=output_dir))
+        out_dir = directory(expand("{dirname}peak_tf/", dirname=output_dir))
     script:
         "scripts/peak_tf.py"
 
@@ -157,7 +158,8 @@ rule peak_tf:
 
 rule meta_mtx:
     input:
-        metacell_script = config["scripts"] + "meta_mtx.py"
+        metacell_script = config["scripts"] + "meta_mtx.py",
+        mdata = config["mudata"]["meta"]
     params:
         cell_type_obs = config["peak_selection"]["cell_type_obs"],
         seacell_label = config["anndata"]["SEACell_label"],
@@ -165,7 +167,7 @@ rule meta_mtx:
         atac = config["anndata"]["atac"],
         reference = config["peak_selection"]["reference"],
         sc_atac = config["anndata"]["sc_atac"],
-        out_dir = config["output"] + "diff_acc/"
+        out_dir = config["output"] + "diff_acc/",
     output:
         out_x = config["output"] + "diff_acc/" + "meta_atac_X.mtx",
         out_obs = config["output"] + "diff_acc/" + "meta_atac_cells.csv",
@@ -203,7 +205,6 @@ rule diff_acc:
         out_obs = config["output"] + "diff_acc/" + "meta_atac_cells.csv",
         out_var = config["output"] + "diff_acc/" + "meta_atac_peaks.csv",
         out_metadata = config["output"] + "diff_acc/" + "meta_atac_metadata.csv",
-        out_dir = config['output'] + "diff_acc/",
         json = config['output'] + "diff_acc/reference.json"
     params:
         cell_type_obs = config["peak_selection"]["cell_type_obs"],
@@ -211,11 +212,12 @@ rule diff_acc:
         start = config["peak_selection"]["start"],
         atac = config["anndata"]["atac"],
         sc_atac = config["anndata"]["sc_atac"],
+        out_dir = config["output"] + "diff_acc/"
     output:
         out_file= config["output"] + "diff_acc/.diff_acc"
     shell:
         """
-        Rscript {input.script} {input.out_dir} {input.json} {params.start} {params.cell_type_obs}
+        Rscript {input.script} {params.out_dir} {input.json} {params.start} {params.cell_type_obs}
         touch {output.out_file}
         """
 
@@ -233,12 +235,13 @@ rule diff_acc:
 rule diff_acc_update:
     input:
         in_file = config["output"] + "diff_acc/.diff_acc",
-        out_dir = config['output'] + "diff_acc/"
+        script = config["scripts"] + "diff_acc.py"
     params:
         cell_type_obs = config["peak_selection"]["cell_type_obs"],
         reference = config["peak_selection"]["reference"],
         start = config["peak_selection"]["start"],
-        atac = config["anndata"]["atac"]
+        atac = config["anndata"]["atac"],
+        out_dir = config["output"] + "diff_acc/"
     output:
         out_file= config["output"] + "diff_acc/.diff_acc_update"
     conda:
@@ -343,7 +346,7 @@ rule ct_open_peaks:
 rule peak_selection:
     input:
         gp_dir = expand("{dirname}gp_corrs/", dirname=output_dir),
-        da_dir = expand("{dirname}diff_acc/", dirname=output_dir),
+        da_file = expand("{dirname}diff_acc/.diff_acc_update", dirname=output_dir),
         op_dir = expand("{dirname}ct_open_peaks/", dirname=output_dir),
     params:
         sc_atac = config["anndata"]["sc_atac"],
@@ -467,14 +470,15 @@ rule prep_chromvar:
     params:
         sc_atac = config["anndata"]["sc_atac"],
         min_chip = config["ins_chip"]["min_chip_score"],
-        min_peak_hits = config["ins_chip"]["min_peak_hits"]
+        min_peak_hits = config["ins_chip"]["min_peak_hits"],
+        n_frags_label = config["ins_chip"]['n_frags_label']
     output:
         chromvar_indir = directory(expand("{dirname}chromvar_input/", dirname=output_dir))
     shell:
         """
         mkdir -p {output.chromvar_indir}
         python {input.script} --sc_atac={params.sc_atac} --ins_chip_dir={input.ins_chip_out} --min_chip={params.min_chip} \\
-            --min_peak_hits={params.min_peak_hits} -o={output.chromvar_indir}
+            --min_peak_hits={params.min_peak_hits} --n_frags={params.n_frags_label} -o={output.chromvar_indir}
         """
 # Rule: chromvar
 # Runs chromVAR analysis to assess variability in chromatin accessibility across cells.
