@@ -1,4 +1,4 @@
-name: 
+name: atac-metacell-utilites
 channels:
 - https://conda.anaconda.org/bioconda
 - https://conda.anaconda.org/conda-forge
