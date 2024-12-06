@@ -116,7 +116,7 @@ def main(args):
 
     # Save Gene-peak correlations to Anndata
     gp_corr_df = pd.DataFrame()
-    for gene in tqdm(gp_corr.keys()):
+    for gene in tqdm(gp_corr.keys(), miniter = 5, maxiter = 30):
         if type(gp_corr[gene]) != int:
             gp_corr[gene]["gene"] = pd.Series(gene, gp_corr[gene].index)
             gp_corr_df = pd.concat([gp_corr_df, gp_corr[gene]])
