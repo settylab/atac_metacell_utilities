@@ -1,8 +1,13 @@
 import os
+from pathlib import Path
 
 configfile: "config/config.yaml"
 
 output_dir = config["output"]
+
+
+
+#SAMPLES = [Path(f).name.replace('.fastq.gz', '')  for f in glob_wildcards("{x}.fastq.gz") ]
 
 # ---- Main Rule ---- #
 rule all:
@@ -62,19 +67,35 @@ rule all_seqs:
 rule fimo:
     input:
         meme = config["peaks"]["meme_file"],
-        seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
+        seqs = expand("{dirname}all_seqs.fa", dirname=output_dir),
+        samples = expand("../../data/{sample_name}.meme", sample_name=SAMPLES)
     output:
         fimo_dir = directory(
-            expand("{dirname}fimo_result/", dirname=output_dir))
+            expand("{dirname}fimo_result/", dirname=output_dir)),
+        fimo_mats = expand("{dirname}fimo_result/individual_results/{x}.tsv", x = SAMPLES, dirname = output_dir)
     log:
         out = config["logs"] + "fimo.out"
     shell:
         """
-        # fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-        # rm -f {output.fimo_dir}/cisml.xml
+        module load MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
+        fasta-get-markov -m 0 {input.seqs} > {output.fimo_dir}/all_seqs_bg.fa
+        fimo -bfile {output.fimo_dir}/all_seqs_bg.fa \ 
+             -oc {output.fimo_dir}/individual_results/{x}/fimo.tsv \
+             {input.meme} \
+             {input.seqs} 2> {log.out} 
+        rm -f {output.fimo_dir}/cisml.xml
 
         """
-
+rule merge_fimo:
+    input:
+        fimo_mats = expand("{dirname}fimo_result/individual_results/{x}/fimo.tsv", x = SAMPLES, dirname = output_dir)
+    output: 
+        expand("{dirname}fimo_result/fimo.tsv", dirname = output_dir)
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/merge_fimo.py"
+    
 rule peak_tf:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
