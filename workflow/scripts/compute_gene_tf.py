@@ -1,90 +1,23 @@
-if __name__ == "__main__":
-    import argparse
-    desc = "Creates three versions of gene x TF matrices"
-
-    parser = argparse.ArgumentParser(
-        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
-    )
-
-    parser.add_argument(
-        "--sc_atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC single-cell AnnData, common obs with RNA",
-    )
-
-    parser.add_argument(
-        "--sc_rna",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to RNA single-cell AnnData, common obs with ATAC",
-    )
-
-    parser.add_argument(
-        "--min_corr",
-        metavar="float",
-        type=float,
-        default=0.0,
-        help="Minimum (excl) correlation value",
-    )
-
-    parser.add_argument(
-        "--max_pval",
-        metavar="float",
-        type=float,
-        default=0.1,
-        help="Maximum (excl) p-value",
-    )
-
-    parser.add_argument(
-        "--min_peaks",
-        metavar="int",
-        type=int,
-        default=2,
-        help="Minimum num of significant peaks for gene to pass filtering, inclusive",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        help="Path to output directory",
-        default="results/gtf_mats/",
-        metavar="directory"
-    )
-
-    args = parser.parse_args()
-
 import pandas as pd
 import scanpy as sc
 from scipy.sparse import csr_matrix
+from snakemake.script import snakemake
 
-
-def main(args):
+def main():
     # Load data
     print('Loading data')
-    atac_sc_ad = sc.read(args.sc_atac)
-    atac_mc_ad = sc.read(args.atac)
-    rna_sc_ad = sc.read(args.sc_rna)
+    atac_sc_ad = sc.read(snakemake.config['anndata']['sc_atac'])
+    atac_mc_ad = sc.read(snakemake.config['anndata']['atac'])
+    rna_sc_ad = sc.read(snakemake.config['anndata']['sc_rna'])
 
     # Assemble necessary matrices
     print('Computing gene TF relationships')
 
     # Gene X Peak matrix
     gp = atac_mc_ad.uns['gp_corrs'].copy()
-    gp = gp.loc[(gp['cor'] > args.min_corr) & (gp['pval'] < args.max_pval), :]
+    gp = gp.loc[(gp['cor'] > snakemake.params['min_corr']) & (gp['pval'] < snakemake.params['max_pval']), :]
     peak_counts = gp.groupby('gene').apply(len)
-    use_genes = peak_counts[peak_counts >= args.min_peaks].index
+    use_genes = peak_counts[peak_counts >= snakemake.params['min_peaks']].index
     gp.loc[gp['gene'].isin(use_genes), :]
 
     # Convert to categoricals
@@ -116,11 +49,13 @@ def main(args):
     
     # Saving resuls
     print('Saving results')
-    rna_sc_ad.write(args.sc_rna)
+    rna_sc_ad.write(snakemake.config['anndata']['sc_rna'])
 
     # CReate directory to mark completion
     import os
-    os.makedirs(str(args.outdir), exist_ok=True)
+    os.makedirs(f"{str(snakemake.config['output'])}/gene_x_tf", exist_ok=True)
+    with open(snakemake.output, 'a'):
+        os.utime(snakemake.output, None)
 
 if __name__ == "__main__":
-    main(args)
+    main()

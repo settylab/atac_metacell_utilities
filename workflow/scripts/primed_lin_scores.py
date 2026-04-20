@@ -2,7 +2,7 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-
+from snakemake.script import snakemake
 
 def _dot_func(x, y):
     return x.dot(y)
@@ -16,9 +16,9 @@ def main():
 
     # Load params
     print('Load data...')
-    atac_sc_ad = sc.read_h5ad(snakemake.input["sc_atac"])
-    atac_meta_ad = sc.read_h5ad(snakemake.input["meta_atac"])
-    rna_sc_ad = sc.read_h5ad(snakemake.input["sc_rna"])
+    atac_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_atac"])
+    atac_meta_ad = sc.read_h5ad(snakemake.config['anndata']["meta_atac"])
+    rna_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_rna"])
     target_lineage = snakemake.params["target"][0]
     min_corr = snakemake.params["min_corr"]
     max_pval = snakemake.params["max_pval"]
@@ -76,7 +76,7 @@ def main():
 
     # Save results
     print('Saving anndata')
-    rna_sc_ad.write_h5ad(snakemake.input["sc_rna"])
+    rna_sc_ad.write_h5ad(snakemake.config['anndata']["sc_rna"])
 
     # CReate directory to mark completion
     import os

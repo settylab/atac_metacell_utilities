@@ -2,7 +2,7 @@ import scanpy as sc
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-
+from snakemake.script import snakemake
 
 def main():
 
@@ -97,8 +97,9 @@ def main():
 
     # CReate directory to mark completion
     import os
-    os.makedirs(str(snakemake.output["out_dir"]), exist_ok=True)
-
+    os.makedirs(f"{str(snakemake.config["output"])}peak_selection/", exist_ok=True)
+    with open(snakemake.output, 'a'):
+        os.utime(snakemake.output, None)
     print("Completed!")
 
 if __name__ == "__main__":

@@ -13,9 +13,14 @@ if (length(args) < 3){
     group_variable <- args[3]
 }
 # Comparisons
+
 to_compare = strsplit(to_compare, as.character('/'))[[1]]
 to_compare = strsplit(to_compare, as.character(','), fixed = TRUE)
 
+
+to_compare=c(c("EryPre1", "proB"))
+data_dir="D2R1/results/diff_acc"
+group_variable="celltype_updated"
 fname <- paste(data_dir, '/meta_atac_metadata.csv',  sep = "")
 atac_metadata <- fread(paste(data_dir, '/meta_atac_metadata.csv' , sep = ""))
 
@@ -33,9 +38,10 @@ peak_names <- peak_names[! peak_names %in% c('0')]
 metacell_mtx <- as(metacell_mtx, "dgCMatrix")
 metacell_mtx <- t(metacell_mtx)
 
-
 metacell_se <- SummarizedExperiment(assays=metacell_mtx)
+rownames(metacell_se) <- peak_names
 colnames(metacell_se) <- atac_metadata$V1
+#colnames(metacell_se) <- atac_metadata[[group_variable]]
 diff_acc_edgeR <- function(metacell_mtx, atac_metadata, group_variable, to_compare, out_dir){
     sub_atac_md <- atac_metadata %>% 
       .[,group:=eval(as.name(group_variable))] %>% 

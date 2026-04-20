@@ -1,67 +1,24 @@
-if __name__ == "__main__":
-    import argparse
-    desc = "Create a peaks X TF AnnData with FIMO scores"
-
-    parser = argparse.ArgumentParser(
-        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--peak_file",
-        metavar="file",
-        type=str,
-        required=True,
-        help="Path to peaks.bed file",
-    )
-
-    parser.add_argument(
-        "--fimo_res",
-        metavar="directory",
-        type=str,
-        default="results/fimo_result/",
-        help="Path to FIMO output directory",
-    )
-
-    parser.add_argument(
-        "--sc_atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC single-cell AnnData, common obs with RNA. FIMO results will stored in atac_ad.varm",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        help="Path to output directory",
-        default="results/",
-        metavar="directory"
-    )
-
-    args = parser.parse_args()
-
 from tqdm.auto import tqdm
 from scipy.sparse import csr_matrix
 import scanpy as sc
 import pandas as pd
 import numpy as np
 import subprocess
-
+from snakemake.script import snakemake
 
 def build_peak_tf(fimo_scores, peaks_df):
     # Motif information
     motifs = pd.Series(dtype=object)
     motif_index = 0
     rec_index = 0
-
+    
     # Peak index
     peak_index = pd.Series(range(len(peaks_df.name)), index=peaks_df.name)
 
     # Initialize Values
     num_records = int(subprocess.run(
         ['wc', '-l', fimo_scores], stdout=subprocess.PIPE).stdout.decode().split(' ')[0]) - 5
-
+    
     x = np.zeros(num_records)
     y = np.zeros(num_records)
     values = np.zeros(num_records)
@@ -99,11 +56,11 @@ def build_peak_tf(fimo_scores, peaks_df):
     return pxtf_ad
 
 
-def main(args):
-    peaks_df = pd.read_csv(args.peak_file, sep='\t', header=None)
+def main():
+    peaks_df = pd.read_csv(snakemake.input["peaks"], sep='\t', header=None)
     peaks_df.columns = ['chrom', 'chromStart',
                         'chromEnd', 'summit', 'score', 'name']
-    fimo_scores = args.fimo_res + '/fimo.tsv'
+    fimo_scores = snakemake.input['fimo_file']
 
     # Build peak x TF AnnData
     print('Building peak X TF matrix')
@@ -111,15 +68,17 @@ def main(args):
 
     # Load and save in anndata
     print('Saving results to anndata')
-    atac_sc_ad = sc.read(args.sc_atac)
+    atac_sc_ad = sc.read(snakemake.config['anndata']["sc_atac"])
     atac_sc_ad.varm['FIMO'] = pxtf_ad[atac_sc_ad.var_names, :].X
     atac_sc_ad.uns['FIMOColumns'] = np.array(pxtf_ad.var_names)
-    atac_sc_ad.write(args.sc_atac)
+    atac_sc_ad.write(snakemake.config['anndata']["sc_atac"])
 
     # CReate directory to mark completion
     import os
-    os.makedirs(str(args.outdir), exist_ok=True)
+    os.makedirs(f"{str(snakemake.config["out_dir"])}peak_tf/", exist_ok=True)
+    with open(snakemake.output, 'a'):
+        os.utime(snakemake.output, None)
 
 
 if __name__ == "__main__":
-    main(args)
+    main()

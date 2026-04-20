@@ -1,54 +1,3 @@
-if __name__ == "__main__":
-    import argparse
-    desc = "Computes tf-peak correlations and in silico ChIP matrix"
-
-    parser = argparse.ArgumentParser(
-        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC MC AnnData, common obs with RNA",
-    )
-
-    parser.add_argument(
-        "--rna",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to RNA MC AnnData, common obs with ATAC",
-    )
-
-    parser.add_argument(
-        "--sc_atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC single-cell AnnData, common obs with RNA. FIMO results will stored in atac_ad.varm",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        help="Path to output directory",
-        default="results/ins_chip/",
-        metavar="directory"
-    )
-
-    parser.add_argument(
-        "--verbose",
-        help="Whether to print out info about each TF",
-        action="store_true"
-
-    )
-
-    args = parser.parse_args()
-
-
 import pandas as pd
 import numpy as np
 import scipy.io
@@ -57,7 +6,8 @@ from scipy.sparse import csr_matrix
 import scanpy as sc
 import numba as nb
 import os
-
+from itertools import product
+from snakemake.script import snakemake
 
 def filter_gene(ad, gene_list):
     has_expr = [g in gene_list for g in ad.var_names]
@@ -155,14 +105,14 @@ def compute_ins_mat(tf_set, corr_mat, atac_mat, fimo_mat, verbose=True):
     return final_out
 
 
-def main(args):
+def main():
 
     # Load data
     print('Load data...')
-    atac_ad = sc.read(args.atac)
-    rna_ad = sc.read(args.rna)
-    atac_sc_ad = sc.read(args.sc_atac)
-
+    atac_ad = sc.read(snakemake.config["anndata"]['atac'])
+    rna_ad = sc.read(snakemake.config["anndata"]['rna'])
+    atac_sc_ad = sc.read(snakemake.config["anndata"]['sc_atac'])
+    rna_sc_ad = sc.read(snakemake.config["anndata"]['sc_rna'])
     # Reconstruction peak X TF
     peak_x_tf = sc.AnnData(atac_sc_ad.varm['FIMO'])
     peak_x_tf.var_names = atac_sc_ad.uns['FIMOColumns']
@@ -182,22 +132,45 @@ def main(args):
     # compute correlation and in silico chip matrix
     print('computing correlations...')
     corr_mat = compute_corrs(all_tfs, rna_mat, atac_mat,
-                             fimo_mat, verbose=args.verbose)
+                             fimo_mat, verbose=snakemake.params['verbose'])
     print('Computing in silico chip score...')
     insc_mat = compute_ins_mat(
-        all_tfs, corr_mat, atac_mat, fimo_mat, verbose=args.verbose)
+        all_tfs, corr_mat, atac_mat, fimo_mat, verbose=snakemake.params['verbose'])
 
-    # Save results to anndata
+    # Save results to ATAC anndata
     print('Saving results to anndata...')
     atac_sc_ad.varm['InSilicoChip_Corrs'] = csr_matrix(corr_mat.loc[atac_sc_ad.var_names, :].values)
     atac_sc_ad.varm['InSilicoChip'] = csr_matrix(insc_mat.loc[atac_sc_ad.var_names, :].values)
     atac_sc_ad.uns['InSilicoChipColumns'] = np.array(all_tfs)
-    atac_sc_ad.write(args.sc_atac)
+    atac_sc_ad.write(snakemake.config['anndata']['sc_atac'])
+
+    # Save targets to RNA anndata
+    near_targets = dict()
+    target_genes = rna_sc_ad[:,rna_sc_ad.var['upregulated_genes']].var_names
+    near_target_genes = pd.DataFrame(0, index = rna_sc_ad.var_names, columns = target_genes )
+    for chip_gene, gene in list(product(all_tfs, target_genes)):
+        if chip_gene not in near_targets.keys():
+            near_targets[chip_gene] = pd.DataFrame()
+        near = insc_mat.loc[atac_ad.var['nearestGene'] == gene].copy()
+        near.loc[:,'gene'] = pd.Series(data = gene, index =near.index)
+        near = near.loc[near[chip_gene] >0,[chip_gene, 'gene']]
+        near_targets[chip_gene] = pd.concat([near_targets[chip_gene], near])
+    near_target_genes.loc[chip_gene, :]= [0 if x in near_targets[chip_gene]['gene'].unique() else 1 for x in near_target_genes.columns]
+    print(near_target_genes.values)
+    print(near_target_genes.shape)
+    for col in rna_sc_ad.obs.select_dtypes(exclude=["number","bool","object_"]).columns:
+        print(rna_sc_ad.obs[col].dtype)
+        rna_sc_ad.obs[col] = rna_sc_ad.obs[col].astype(str).astype("category")
+    rna_sc_ad.varm['TF_targets'] = near_target_genes.astype(int).values
+    rna_sc_ad.uns['TF_targets_columns'] = list(target_genes.astype(str))
+    rna_sc_ad.write_h5ad(snakemake.config['anndata']['sc_rna'])
 
     ## Create directory to signify completion
-    os.makedirs(args.outdir, exist_ok=True)
+    os.makedirs(f"{str(snakemake.config['output'])}ins_chip/", exist_ok=True)
+    with open(snakemake.output, 'a'):
+        os.utime(snakemake.output, None)
     print('Completed!')
 
 
 if __name__ == "__main__":
-    main(args)
+    main()
