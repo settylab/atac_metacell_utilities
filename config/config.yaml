@@ -3,7 +3,7 @@ output: # <Output directory here>
 logs: "logs/"
 interactive_clean: True
 
-renv_loc: # <path/to/user/R/library>
+renv_loc: renv/library/R-4.1/x86_64-pc-linux-gnu
 
 anndata:
     atac: # <path/to/SEACell/ATAC/AnnData/here>
