@@ -3,6 +3,7 @@ import SEACells
 import pandas as pd
 import numpy as np
 from snakemake.script import snakemake
+import os
 
 def main():
 
@@ -37,11 +38,10 @@ def main():
     atac_sc_ad.write(snakemake.input["sc_atac"])
 
     # CReate directory to mark completion
-    import os
-    os.makedirs(f"{str(snakemake.config["output"])}ct_open_peaks/", exist_ok=True)
+    
+    os.makedirs(f"{snakemake.config['output']}ct_open_peaks/", exist_ok=True)
     with open(snakemake.output, 'a'):
         os.utime(snakemake.output, None)
-
-
+        
 if __name__ == "__main__":
     main()

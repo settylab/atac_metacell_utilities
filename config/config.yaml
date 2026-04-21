@@ -35,15 +35,33 @@ gene_peak_corr_cutoffs:
     min_peaks: 2
     
 diff_acc:
-    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
     cell_type_obs: # Specify obs which contains the cell type information .Eg: "celltype"
-    
+    # to_compare is auto-generated from peak_selection targets.
+    # Use extra_comparisons to add pairs not covered by targets.
+    extra_comparisons: ""
+
 peak_selection:
-    target:  # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
-    start: # Stem cell type. Eg: "HSC"
-    reference: # Dictionary of reference/other cell types for comparison. Eg listed below
-         Ery: "EryPre1"
-         Mono: "Mono"
-    min_logFC: 0
-    max_logFC: 0.25
+    # Each key under targets is a lineage name.
+    # target_celltype: the cell type representing this lineage
+    # start: the stem/progenitor cell type
+    # reference: dict of {lineage_name: cell_type} for other lineages
+    # min_logFC / max_logFC: thresholds for differential accessibility filtering
+    targets:
+        # Example:
+        # Bcells:
+        #     target_celltype: "proB"
+        #     start: "HSC"
+        #     reference:
+        #         Ery: "EryPre1"
+        #         Mono: "Mono"
+        #     min_logFC: 0
+        #     max_logFC: 0.25
+        # Erythroid:
+        #     target_celltype: "EryPre1"
+        #     start: "HSC"
+        #     reference:
+        #         Bcells: "proB"
+        #         Mono: "Mono"
+        #     min_logFC: 0
+        #     max_logFC: 0.25
     

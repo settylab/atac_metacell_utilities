@@ -19,7 +19,7 @@ def main():
     atac_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_atac"])
     atac_meta_ad = sc.read_h5ad(snakemake.config['anndata']["meta_atac"])
     rna_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_rna"])
-    target_lineage = snakemake.params["target"][0]
+    target_lineage = snakemake.params["lineage_name"]
     min_corr = snakemake.params["min_corr"]
     max_pval = snakemake.params["max_pval"]
     min_peaks = snakemake.params["min_peaks"]
@@ -78,9 +78,12 @@ def main():
     print('Saving anndata')
     rna_sc_ad.write_h5ad(snakemake.config['anndata']["sc_rna"])
 
-    # CReate directory to mark completion
+    # Create directory to mark completion
     import os
-    os.makedirs(str(snakemake.output["out_dir"]), exist_ok=True)
+    out_path = str(snakemake.output[0])
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'a'):
+        os.utime(out_path, None)
 
 
 if __name__ == "__main__":

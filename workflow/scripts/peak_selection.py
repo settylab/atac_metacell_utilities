@@ -12,9 +12,8 @@ def main():
     atac_meta_ad = sc.read(snakemake.input["meta_atac"])
 
     # set target lineage and cell type
-    target = snakemake.params["target"]
-    target_lineage = target[0]
-    target_celltype = target[1]
+    target_lineage = snakemake.params["lineage_name"]
+    target_celltype = snakemake.params["target_celltype"]
     # Start cell type
     start_celltype = snakemake.params["start"]
     # Reference lineages
@@ -95,12 +94,18 @@ def main():
     print('Saving')
     atac_ad.write(snakemake.input["sc_atac"])
 
-    # CReate directory to mark completion
+    # Create directory to mark completion
     import os
-    os.makedirs(f"{str(snakemake.config["output"])}peak_selection/", exist_ok=True)
-    with open(snakemake.output, 'a'):
-        os.utime(snakemake.output, None)
+    out_path = str(snakemake.output[0])
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(f"{out_path}/., 'a'):
+        os.utime(out_path, None)
     print("Completed!")
 
+
+# Create file if it doesn't exist by opening in append mode
+with open(fname, 'a'):
+    # Update access and modification times to 'now'
+    os.utime(fname, None)
 if __name__ == "__main__":
     main()

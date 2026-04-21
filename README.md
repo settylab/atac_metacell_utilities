@@ -211,18 +211,19 @@ snakemake -nr all
 
  * `-n` flag tells `snakemake` to make a "dry run"
  * `-r` flag will ouput the reason each rule is running
+ * `--resources anndata_write=1` creates a lock so rules which write to an AnnData file cannot be performed in parallel.
 
 To generate all files, run:
 
 ```
-snakemake --cores 1 all
+snakemake --cores 1 --resources anndata_write=1 all 
 ```
 
 **NOTE:** In the case that a rule fails, it is not necessary to rerun rules that successfully completed. 
 
 In fact, calling the `all` rule again will only run the rules for which their output is missing.
 ```
-snakemake --cores 1 all
+snakemake --cores 1 --resources anndata_write=1 all 
 ```
 
 For more control, individual rules can also be called:
@@ -230,12 +231,12 @@ For more control, individual rules can also be called:
 If you do this, make sure all the input dependencies have already been generated! `-n` can be appended for a dry run to determine if inputs are available.
 
 ```
-snakemake --cores 1 name_of_rule
+snakemake --cores 1  --resources anndata_write=1 name_of_rule
 ```
 
 After modifications of inputs or parameters, you can force a rule to rerun using the `-R` flag:
 ```
-snakemake --cores 1 -R name_of_rule
+snakemake --cores 1 -R  --resources anndata_write=1 name_of_rule 
 ```
 
 For even more control, the `--allowed-rules` argument can be used to pass a space-separated list of rules that are allowed to run. This is helpful when trying to avoid re-running time-intensive rules such as `fimo` and `gp_corr` when calling `all` or individual rules that get inputs from upstream rules. 

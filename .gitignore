@@ -2,6 +2,9 @@
 .snakemake
 ._dag.png
 .DS_Store
+*results/
+*logs/
+data/
 **/__pycache__/
 *.py[cod]
 renv/cellar/
@@ -10,9 +13,6 @@ renv/local/
 renv/lock/
 renv/python/
 renv/staging/
-data/
-*logs/
-*results/
 .RData
 .Rhistory
 config/D*
