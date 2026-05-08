@@ -4,8 +4,6 @@ output: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/ata
 logs: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/atac_utility/logs"
 interactive_clean: True
 
-renv_loc: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/renv/"
-
 anndata:
     atac: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_atac_SEACell_meta.h5ad"
     rna: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_rna_SEACell_meta.h5ad"

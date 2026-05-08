@@ -17,22 +17,6 @@ rule dl_hg38:
     shell:
         "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
 
-# ---- renv Rules ---- #
-rule renv_install:
-    input:
-        libloc = config['renv_loc']
-    shell:
-        """
-        Rscript workflow/scripts/install_renv.R {input.libloc}
-        """
-
-rule renv_init_restore:
-    shell:
-        """
-        R -e 'renv::init(bare=TRUE)'
-        R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
-        """
-
 # ---- Preparation Rules ---- #
 
 rule prepare_peak_file:
