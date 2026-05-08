@@ -34,6 +34,8 @@ bg <- getBackgroundPeaks(object=counts_filtered)
 dev <- computeDeviations(object=counts_filtered, annotations=anno, background_peaks=bg)
 
 # export output
+# Ensure output directory exists
+dir.create(chromvar_outdir, recursive=TRUE, showWarnings=FALSE)
 deviations <- assay(dev, "deviations")
 write.csv(deviations, sprintf("%s/deviations.csv", chromvar_outdir))
 zs_deviations <- assay(dev, "z")

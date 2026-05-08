@@ -103,8 +103,13 @@ def c(a, b):
 
     out = np.empty((m, 1))
 
+    # Avoid division by zero by adding a small epsilon to denominators
+    eps = 1e-12
+    sig_a_safe = sig_a if np.abs(sig_a) > eps else eps
+
     for i in range(m):
-        out[i] = np.dot((a - mu_a), (b[i] - mu_b[i])) / k / sig_a / sig_b[i]
+        sig_b_safe = sig_b[i] if np.abs(sig_b[i]) > eps else eps
+        out[i] = np.dot((a - mu_a), (b[i] - mu_b[i])) / k / sig_a_safe / sig_b_safe
 
     return out
 

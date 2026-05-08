@@ -1,21 +1,23 @@
-scripts: "workflow/scripts/"
-output: # <Output directory here> 
-logs: "logs/"
+scripts: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/workflow/scripts/"
+output: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/atac_utility/"
+# logs: "/home/%u/atac_utility_logs/%x_job-%j_%N.log"
+logs: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/atac_utility/logs"
 interactive_clean: True
 
-renv_loc: # <path/to/user/R/library>
+renv_loc: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/renv/"
 
 anndata:
-    atac: # <path/to/SEACell/ATAC/AnnData/here>
-    rna: # <path/to/SEACell/RNA/AnnData/here>
-    sc_atac:  # <path/to/Single-cel/ATAC/AnnData/here>
-    sc_rna: # <path/to/Single-cel/RNA/AnnData/here>
+    atac: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_atac_SEACell_meta.h5ad"
+    rna: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_rna_SEACell_meta.h5ad"
+    sc_atac: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_atac_SEACell.h5ad"
+    sc_rna: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_rna_SEACell.h5ad"
     # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
     SEACell_label: "SEACell"
 peaks:
     width: 150
-    genome: # Specify genome here
-    meme_file: "data/cis-bp-tf-information.meme"
+    genome: "hg38"
+    meme_file: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/data/cis-bp-tf-information.meme"
+    gtf_file: "/fh/fast/setty_m/grp/gtfs/hg38.gtf"
 
 ins_chip:
     # set verbose to "--verbose" for True
@@ -25,18 +27,20 @@ ins_chip:
 
 gene_peak_corr_config:
     # set test_set to "--test_set" for True
-    n_jobs: 1
+    n_jobs: 32
     test_set: ""
     n_genes: 20
 
 gene_peak_corr_cutoffs:
-    min_corr: 0.0
+    min_corr: 0.1
     max_pval: 0.1
     min_peaks: 2
     
 diff_acc:
-    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
-    cell_type_obs: # Specify obs which contains the cell type information .Eg: "celltype"
+    # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
+    to_compare: "transitioning,basal/transitioning,parabasal/transitioning,suprabasal/transitioning,dividing"
+    # Specify obs which contains the cell type information .Eg: "celltype"
+    cell_type_obs: "predicted_epi_subtypes_annot"
     
 peak_selection:
     target:  # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
@@ -46,4 +50,3 @@ peak_selection:
          Mono: "Mono"
     min_logFC: 0
     max_logFC: 0.25
-    

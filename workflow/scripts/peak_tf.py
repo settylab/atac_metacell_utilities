@@ -67,7 +67,7 @@ def build_peak_tf(fimo_scores, peaks_df):
     values = np.zeros(num_records)
 
     # Read file
-
+            
     with open(fimo_scores, 'r') as f:
         for line in tqdm(f):
             # Skip first line
@@ -77,7 +77,12 @@ def build_peak_tf(fimo_scores, peaks_df):
 
             if len(split) == 1:
                 break
-
+            
+             # Ensure peak is in peaks_df.name
+            peak_name = split[2]
+            if peak_name not in peak_index:
+                continue
+                
             # Update motifs if necessary
             if split[1] not in motifs:
                 motifs[split[1]] = motif_index

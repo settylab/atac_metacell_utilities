@@ -82,8 +82,8 @@ rule peak_tf:
         sc_atac = config["anndata"]["sc_atac"],
     # params:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
-    conda:
-        "../envs/environment.yaml"
+    # conda:
+    #     "../envs/environment.yaml"
     output:
         out_dir = directory(
             expand("{dirname}peak_tf/", dirname=output_dir))
@@ -116,8 +116,7 @@ rule gp_corr:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
         script = config["scripts"] + "gp_corr.py",
-        gtf_file = expand("data/{genome}.gtf",
-                          genome=config["peaks"]["genome"])
+        gtf_file = config["peaks"]["gtf_file"]
     params:
         n_jobs = config["gene_peak_corr_config"]["n_jobs"],
         test_set = config["gene_peak_corr_config"]["test_set"],
