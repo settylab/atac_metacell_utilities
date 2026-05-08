@@ -49,15 +49,15 @@ rule prepare_peak_file:
 rule all_seqs:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
-        script = config["scripts"] + "seq_gl.R"
+        script = config["scripts"] + "seq_gl.py",
+        genome_fasta = config["peaks"]["genome_fasta"]
     params:
-        span = config["peaks"]["width"],
-        genome = config["peaks"]["genome"]
+        span = config["peaks"]["width"]
     output:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
         """
-        Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
+        python {input.script} {input.peaks} {output.outfile} {params.span} {input.genome_fasta}
         """
 rule fimo:
     input:

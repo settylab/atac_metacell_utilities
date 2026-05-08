@@ -16,6 +16,7 @@ anndata:
 peaks:
     width: 150
     genome: "hg38"
+    genome_fasta: "/fh/fast/setty_m/user/yhuang2/data/hg38/hg38.fa"
     meme_file: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/data/cis-bp-tf-information.meme"
     gtf_file: "/fh/fast/setty_m/grp/gtfs/hg38.gtf"
 
