@@ -14,9 +14,28 @@ anndata:
 peaks:
     width: 150
     genome: "hg38"
-    genome_fasta: "/fh/fast/setty_m/user/yhuang2/data/hg38/hg38.fa"
+    # Single override-able key. User-provided path /fh/fast/setty_m/user/yhuang2/data/hg38/hg38.fa
+    # was a ZIP archive of an NCBI download with non-UCSC chrom names; the
+    # refgenie-managed file below is a real FASTA with UCSC-style >chr1 headers
+    # and a pre-built .fai. Override here for a different reference.
+    genome_fasta: "/fh/fast/setty_m/user/yhuang2/data/alias/hg38/fasta/default/hg38.fa"
     meme_file: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/data/cis-bp-tf-information.meme"
     gtf_file: "/fh/fast/setty_m/grp/gtfs/hg38.gtf"
+
+fimo:
+    # FIMO scatter parallelism: number of FASTA chunks the input gets split
+    # into for parallel scatter-gather. Each chunk runs as one snakemake
+    # rule instance (FIMO is single-threaded internally). 32 is the
+    # default on Fred Hutch campus-new; bump if cores are abundant.
+    n_chunks: 32
+    # Per-chunk flags: --no-pgc keeps start/stop sequence-relative (matches
+    # the user's prior fimo.sh invocation; FIMO 5.5 default would re-emit
+    # absolute genomic coords parsed from chr:start-end sequence names).
+    # --thresh 1e-4 pins the default. --no-qvalue skips per-chunk q-value
+    # computation, which would be incorrect under scatter (q-value is a
+    # global FDR statistic). Global q-values are recomputed from the
+    # gathered p-value column via BH-FDR in workflow/scripts/merge_fimo.py.
+    flags: "--no-pgc --thresh 1e-4 --no-qvalue"
 
 ins_chip:
     # set verbose to "--verbose" for True
