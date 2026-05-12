@@ -59,8 +59,11 @@ def build_peak_tf(fimo_scores, peaks_df):
     peak_index = pd.Series(range(len(peaks_df.name)), index=peaks_df.name)
 
     # Initialize Values
-    num_records = int(subprocess.run(
-        ['wc', '-l', fimo_scores], stdout=subprocess.PIPE).stdout.decode().split(' ')[0]) - 5
+    # Count non-comment, non-blank data lines; subtract 1 for the header
+    # (which starts with 'motif_id', not '#'). Robust to FIMO trailer
+    # presence/absence — blank lines fail the `^[^#]` match.
+    num_records = int(subprocess.check_output(
+        ['grep', '-c', '^[^#]', fimo_scores]).strip()) - 1
 
     x = np.zeros(num_records)
     y = np.zeros(num_records)
