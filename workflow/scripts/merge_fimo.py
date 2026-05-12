@@ -43,6 +43,13 @@ def bh_qvalues(pvals):
 
 def merge(output_tsv, chunk_tsvs):
     header = None
+    # Preserve FIMO's trailer banner lines (version + format-doc URL) from
+    # the first chunk that has them, so the merged file's trailer reflects
+    # the real FIMO build. peak_tf.py:62-63 uses `wc -l - 5` to pre-size
+    # numpy arrays, which assumes 1 header line + 4 trailer lines; dropping
+    # the trailer under-allocates by 4 and triggers an out-of-bounds write.
+    version_line = None
+    format_line = None
     rows = []  # list of (cols list,) so we can rewrite col 8 (q-value)
     for chunk_idx, path in enumerate(chunk_tsvs):
         with open(path, "r") as f:
@@ -51,7 +58,12 @@ def merge(output_tsv, chunk_tsvs):
                 if not stripped:
                     continue
                 if stripped.startswith("#"):
-                    # Trailing version/command comments -- drop entirely.
+                    if version_line is None and stripped.startswith("# FIMO ("):
+                        version_line = stripped
+                    elif format_line is None and stripped.startswith(
+                        "# The format of this file"
+                    ):
+                        format_line = stripped
                     continue
                 if stripped.startswith("motif_id\t"):
                     if header is None:
@@ -79,10 +91,29 @@ def merge(output_tsv, chunk_tsvs):
                 r.append("")
             r[8] = f"{q:.3g}"
 
+    if version_line is None:
+        version_line = "# FIMO (Find Individual Motif Occurrences)"
+    if format_line is None:
+        format_line = (
+            "# The format of this file is described at "
+            "https://meme-suite.org/meme/doc/fimo-output-format.html#tsv_results."
+        )
+    merge_line = (
+        f"# merged from {len(chunk_tsvs)} FIMO chunks; global q-values "
+        f"recomputed via Benjamini-Hochberg over the concatenated p-value "
+        f"column (merge_fimo.py)"
+    )
+
     with open(output_tsv, "w") as out:
         out.write(header + "\n")
         for r in rows:
             out.write("\t".join(r) + "\n")
+        # FIMO trailer: 1 blank line + 3 `#`-prefixed lines. peak_tf.py
+        # relies on `wc -l - 5` (1 header + 4 trailer) to size its arrays.
+        out.write("\n")
+        out.write(version_line + "\n")
+        out.write(format_line + "\n")
+        out.write(merge_line + "\n")
 
     print(
         f"merged {len(chunk_tsvs)} chunks -> {output_tsv} "
