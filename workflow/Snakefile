@@ -200,6 +200,7 @@ rule peak_scores:
 # ---- In Silico ChIP Rules ---- #
 rule compute_ins_chip:
     input:
+        peak_tf = output_dir + "peak_tf/",
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
         sc_atac = config["anndata"]["sc_atac"],

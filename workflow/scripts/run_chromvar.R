@@ -22,6 +22,10 @@ names(col_data) <- 'depth'
 
 fragment_counts <- SummarizedExperiment(assays=list(counts=count_matrix), rowRanges=peaks, colData=col_data)
 fragment_counts <- addGCBias(fragment_counts, genome=genome)
+row.data <- data.frame(rowData(fragment_counts))
+row.data[is.na(fragment_counts)] <- 0
+rowData(fragment_counts) <- row.data
+
 counts_filtered <- filterPeaks(fragment_counts, non_overlapping=TRUE)
 
 tf_names <- readr::read_csv(sprintf("%s/chromvar_tf_names.csv", chromvar_indir))

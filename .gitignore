@@ -4,15 +4,17 @@
 .DS_Store
 **/__pycache__/
 *.py[cod]
-*/__pycache__/
 renv/cellar/
 renv/library/
 renv/local/
 renv/lock/
 renv/python/
 renv/staging/
-<<<<<<< HEAD
 **/*.h5ad
 *data/
 *results/
-
+data/
+*logs/
+*results/
+.RData
+.Rhistory
