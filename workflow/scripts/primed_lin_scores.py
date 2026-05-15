@@ -36,11 +36,11 @@ def main():
     imputed_peak_matrix = impute_data_with_weights(atac_sc_ad[:, lin_peaks],
                                                    pd.DataFrame(atac_sc_ad[:, lin_peaks].layers['tf_idf'].todense(),
                                                                 columns=lin_peaks, index=atac_sc_ad.obs_names))
-
+    atac_sc_ad.var[f'{target_lineage}_all'] = pd.Series(atac_sc_ad.var_names.isin(lin_peaks), index = atac_sc_ad.var_names, dtype = bool)
     # Scores
     from scipy.sparse import csr_matrix
     acc_scores = dict()
-    for key in ['primed', 'lineage_specific']:
+    for key in ['primed', 'lineage_specific', 'all']:
         print(f'Computing {key} scores')
 
         # Imputead accessibility
@@ -73,7 +73,7 @@ def main():
 
         # Save results to rna andata
         rna_sc_ad.layers[f'{target_lineage}_{key}'] = csr_matrix(acc_scores[key])
-
+ 
     # Save results
     print('Saving anndata')
     rna_sc_ad.write_h5ad(snakemake.input["sc_rna"])

@@ -10,6 +10,9 @@ renv/local/
 renv/lock/
 renv/python/
 renv/staging/
+**/*.h5ad
+*data/
+*results/
 data/
 *logs/
 *results/
