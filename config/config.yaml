@@ -1,41 +1,21 @@
-scripts: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/workflow/scripts/"
-output: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/atac_utility/"
-# logs: "/home/%u/atac_utility_logs/%x_job-%j_%N.log"
-logs: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/atac_utility/logs"
+scripts: "workflow/scripts/"
+output: # <Output directory here> 
+logs: "logs/"
 interactive_clean: True
 
+renv_loc: # <path/to/user/R/library>
+
 anndata:
-    atac: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_atac_SEACell_meta.h5ad"
-    rna: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_rna_SEACell_meta.h5ad"
-    sc_atac: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_atac_SEACell.h5ad"
-    sc_rna: "/fh/fast/setty_m/user/yhuang2/receptor_activity_benchmark/data/cd34/anndata/cd34_multiome_rna_SEACell.h5ad"
+    atac: # <path/to/SEACell/ATAC/AnnData/here>
+    rna: # <path/to/SEACell/RNA/AnnData/here>
+    sc_atac:  # <path/to/Single-cel/ATAC/AnnData/here>
+    sc_rna: # <path/to/Single-cel/RNA/AnnData/here>
     # documenting what label was used to create the SEACells AnnData - also used for differential accessibility
     SEACell_label: "SEACell"
 peaks:
     width: 150
-    genome: "hg38"
-    # Single override-able key. User-provided path /fh/fast/setty_m/user/yhuang2/data/hg38/hg38.fa
-    # was a ZIP archive of an NCBI download with non-UCSC chrom names; the
-    # refgenie-managed file below is a real FASTA with UCSC-style >chr1 headers
-    # and a pre-built .fai. Override here for a different reference.
-    genome_fasta: "/fh/fast/setty_m/user/yhuang2/data/alias/hg38/fasta/default/hg38.fa"
-    meme_file: "/fh/fast/setty_m/user/yhuang2/repos/atac_metacell_utilities_s/data/cis-bp-tf-information.meme"
-    gtf_file: "/fh/fast/setty_m/grp/gtfs/hg38.gtf"
-
-fimo:
-    # FIMO scatter parallelism: number of FASTA chunks the input gets split
-    # into for parallel scatter-gather. Each chunk runs as one snakemake
-    # rule instance (FIMO is single-threaded internally). 32 is the
-    # default on Fred Hutch campus-new; bump if cores are abundant.
-    n_chunks: 32
-    # Per-chunk flags: --no-pgc keeps start/stop sequence-relative (matches
-    # the user's prior fimo.sh invocation; FIMO 5.5 default would re-emit
-    # absolute genomic coords parsed from chr:start-end sequence names).
-    # --thresh 1e-4 pins the default. --no-qvalue skips per-chunk q-value
-    # computation, which would be incorrect under scatter (q-value is a
-    # global FDR statistic). Global q-values are recomputed from the
-    # gathered p-value column via BH-FDR in workflow/scripts/merge_fimo.py.
-    flags: "--no-pgc --thresh 1e-4 --no-qvalue"
+    genome: # Specify genome here
+    meme_file: "data/cis-bp-tf-information.meme"
 
 ins_chip:
     # set verbose to "--verbose" for True
@@ -45,20 +25,18 @@ ins_chip:
 
 gene_peak_corr_config:
     # set test_set to "--test_set" for True
-    n_jobs: 32
+    n_jobs: 1
     test_set: ""
     n_genes: 20
 
 gene_peak_corr_cutoffs:
-    min_corr: 0.1
+    min_corr: 0.0
     max_pval: 0.1
     min_peaks: 2
     
 diff_acc:
-    # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
-    to_compare: "transitioning,basal/transitioning,parabasal/transitioning,suprabasal/transitioning,dividing"
-    # Specify obs which contains the cell type information .Eg: "celltype"
-    cell_type_obs: "predicted_epi_subtypes_annot"
+    to_compare: # Specify comparisons here Eg:"EryPre1,proB/Mono,proB/EryPre1,HSC/Mono,HSC"
+    cell_type_obs: # Specify obs which contains the cell type information .Eg: "celltype"
     
 peak_selection:
     target:  # List of cell-types for the target lineage. Eg: ["Bcells","proB"]
@@ -68,3 +46,4 @@ peak_selection:
          Mono: "Mono"
     min_logFC: 0
     max_logFC: 0.25
+    
