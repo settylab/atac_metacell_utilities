@@ -85,7 +85,7 @@ def main(args):
     gp = gp.loc[(gp['cor'] > args.min_corr) & (gp['pval'] < args.max_pval), :]
     peak_counts = gp.groupby('gene').apply(len)
     use_genes = peak_counts[peak_counts >= args.min_peaks].index
-    gp.loc[gp['gene'].isin(use_genes), :]
+    gp = gp.loc[gp['gene'].isin(use_genes), :]
 
     # Convert to categoricals
     gp['peaks'] = gp.index.values

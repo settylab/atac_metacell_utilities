@@ -90,8 +90,6 @@ if __name__ == "__main__":
 import scanpy as sc
 import pandas as pd
 from tqdm.auto import tqdm
-import sys
-sys.path.append('/fh/fast/setty_m/user/yhuang2/repos/SEACells/')
 from SEACells import genescores
 
 
