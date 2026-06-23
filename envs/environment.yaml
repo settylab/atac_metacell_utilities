@@ -293,6 +293,7 @@ dependencies:
   - zipp=3.7.0=pyhd8ed1ab_1
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
+  - meme=5.5
   - pip:
     - cython==0.29.28
     - git+https://github.com/dpeerlab/Palantir.git
@@ -300,3 +301,4 @@ dependencies:
     - git+https://github.com/dpeerlab/SEACells
     - texttable==1.6.4
     - xlrd==1.2.0
+    - pyfaidx>=0.7

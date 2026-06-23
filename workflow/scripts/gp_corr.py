@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "--n_jobs",
         type=int,
         help="Number of jobs for computing GP correlations",
-        default=1,
+        default=15,
         metavar="int"
     )
 
@@ -88,9 +88,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 import scanpy as sc
-import SEACells
 import pandas as pd
 from tqdm.auto import tqdm
+from SEACells import genescores
 
 
 def main(args):
@@ -105,7 +105,7 @@ def main(args):
 
     # Compute Gene-Peak Correlation scores
     print('Computing gene peak correlations...')
-    gp_corr = SEACells.genescores.get_gene_peak_correlations(atac_ad, rna_ad,
+    gp_corr = genescores.get_gene_peak_correlations(atac_ad, rna_ad,
                                                              path_to_gtf=args.gtf_file,
                                                              span=args.transcript_span, n_jobs=args.n_jobs,
                                                              gene_set=gene_set)

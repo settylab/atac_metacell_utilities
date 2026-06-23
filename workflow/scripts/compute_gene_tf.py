@@ -85,7 +85,7 @@ def main(args):
     gp = gp.loc[(gp['cor'] > args.min_corr) & (gp['pval'] < args.max_pval), :]
     peak_counts = gp.groupby('gene').apply(len)
     use_genes = peak_counts[peak_counts >= args.min_peaks].index
-    gp.loc[gp['gene'].isin(use_genes), :]
+    gp = gp.loc[gp['gene'].isin(use_genes), :]
 
     # Convert to categoricals
     gp['peaks'] = gp.index.values
@@ -107,20 +107,28 @@ def main(args):
     # Peak X TF matrix
     peak_X_tf = atac_sc_ad.varm['InSilicoChip']
 
-    # Gene X TF matrix
+   # Gene X TF matrix
     gene_X_tf = gene_X_peak.dot(peak_X_tf)
     
     rna_sc_ad.varm['geneXTF'] = pd.DataFrame(gene_X_tf.todense(),
         index=rna_sc_ad.var_names,
         columns=atac_sc_ad.uns['InSilicoChipColumns'])
     
+    gene_x_tf_df = pd.DataFrame(gene_X_tf.todense(),
+        index=rna_sc_ad.var_names,
+        columns=atac_sc_ad.uns['InSilicoChipColumns'])
+    
+    # Ensure the output directory exists
+    import os
+    output_file = os.path.join(args.outdir, "gene_x_tf.csv")
+    gene_x_tf_df.to_csv(output_file, index=True)
     # Saving resuls
     print('Saving results')
     rna_sc_ad.write(args.sc_rna)
 
     # CReate directory to mark completion
-    import os
-    os.makedirs(str(args.outdir), exist_ok=True)
+    # import os
+    # os.makedirs(str(args.outdir), exist_ok=True)
 
 if __name__ == "__main__":
     main(args)

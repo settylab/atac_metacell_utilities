@@ -4,34 +4,27 @@ configfile: "config/config.yaml"
 
 output_dir = config["output"]
 
+# FIMO scatter: N parallel single-threaded jobs over disjoint FASTA chunks
+# (FIMO doesn't parallelize within a job; parallelism = N rule instances
+# scheduled by snakemake). Per-chunk q-values are skipped via --no-qvalue
+# because q-value is a global FDR statistic; correct global q-values are
+# recomputed from the gathered p-value column in merge_fimo.py.
+N_CHUNKS = config["fimo"]["n_chunks"]
+fimo_chunk_fastas = [f"{output_dir}fimo_chunks/chunk_{i}.fa" for i in range(N_CHUNKS)]
+fimo_chunk_tsvs = [f"{output_dir}fimo_chunks/chunk_{i}/fimo.tsv" for i in range(N_CHUNKS)]
+
 # ---- Main Rule ---- #
+# Trimmed to the gene_x_tf path only. Off-chain rules (chromvar, peak_scores,
+# peak_selection, ct_open_peaks, diff_acc, prep_chromvar, write_ins_chip)
+# are still defined below for reference but are no longer requested by `all`.
 rule all:
     input:
-        chromvar_outdir = expand(
-            "{dirname}chromvar_output/", dirname=output_dir),
-        score_dir = expand("{dirname}peak_scores/", dirname=output_dir),
         gene_x_tf_dir = expand("{dirname}gene_x_tf/", dirname=output_dir)
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
     shell:
         "mkdir -p data && wget https://dp-lab-data-public.s3.amazonaws.com/SEACells-multiome/hg38.gtf -O data/hg38.gtf"
-
-# ---- renv Rules ---- #
-rule renv_install:
-    input:
-        libloc = config['renv_loc']
-    shell:
-        """
-        Rscript workflow/scripts/install_renv.R {input.libloc}
-        """
-
-rule renv_init_restore:
-    shell:
-        """
-        R -e 'renv::init(bare=TRUE)'
-        R -e 'renv::restore(lockfile=\"envs/renv.lock\")'
-        """
 
 # ---- Preparation Rules ---- #
 
@@ -49,30 +42,63 @@ rule prepare_peak_file:
 rule all_seqs:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
-        script = config["scripts"] + "seq_gl.R"
+        script = config["scripts"] + "seq_gl.py",
+        genome_fasta = config["peaks"]["genome_fasta"]
     params:
-        span = config["peaks"]["width"],
-        genome = config["peaks"]["genome"]
+        span = config["peaks"]["width"]
     output:
         outfile = expand("{dirname}all_seqs.fa", dirname=output_dir)
     shell:
         """
-        Rscript {input.script} {input.peaks} {output.outfile} {params.span} {params.genome}
+        python {input.script} {input.peaks} {output.outfile} {params.span} {input.genome_fasta}
         """
-rule fimo:
+rule fasta_split:
+    input:
+        seqs = expand("{dirname}all_seqs.fa", dirname=output_dir),
+        script = config["scripts"] + "split_fasta.py"
+    params:
+        n = N_CHUNKS,
+        prefix = output_dir + "fimo_chunks/chunk_"
+    output:
+        fimo_chunk_fastas
+    shell:
+        "python {input.script} {input.seqs} {params.prefix} {params.n}"
+
+# Per-chunk FIMO. --no-qvalue is on per-chunk because per-chunk q-values
+# are wrong under scatter (q-value is a global FDR over the whole table).
+# Correct global q-values are computed from the concatenated p-value
+# column in rule fimo (merge_fimo.py).
+rule fimo_chunk:
     input:
         meme = config["peaks"]["meme_file"],
-        seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
+        seqs = output_dir + "fimo_chunks/chunk_{idx}.fa"
+    output:
+        tsv = output_dir + "fimo_chunks/chunk_{idx}/fimo.tsv"
+    params:
+        outdir = output_dir + "fimo_chunks/chunk_{idx}",
+        flags = config["fimo"]["flags"]
+    log:
+        out = config["logs"] + "fimo_chunk_{idx}.out"
+    threads: 1
+    shell:
+        """
+        fimo {params.flags} -oc {params.outdir} {input.meme} {input.seqs} 2> {log.out}
+        rm -f {params.outdir}/cisml.xml
+        """
+
+# Gather: concat per-chunk fimo.tsv into a single fimo_result/fimo.tsv.
+# Keeps the path peak_tf.py expects (--fimo_res points at fimo_result/).
+rule fimo:
+    input:
+        chunks = fimo_chunk_tsvs,
+        script = config["scripts"] + "merge_fimo.py"
     output:
         fimo_dir = directory(
             expand("{dirname}fimo_result/", dirname=output_dir))
-    log:
-        out = config["logs"] + "fimo.out"
     shell:
         """
-        # fimo -oc {output.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
-        # rm -f {output.fimo_dir}/cisml.xml
-
+        mkdir -p {output.fimo_dir}
+        python {input.script} {output.fimo_dir}/fimo.tsv {input.chunks}
         """
 
 rule peak_tf:
@@ -82,8 +108,8 @@ rule peak_tf:
         sc_atac = config["anndata"]["sc_atac"],
     # params:
         fimo_dir = expand("{dirname}fimo_result/", dirname=output_dir),
-    conda:
-        "../envs/environment.yaml"
+    # conda:
+    #     "../envs/environment.yaml"
     output:
         out_dir = directory(
             expand("{dirname}peak_tf/", dirname=output_dir))
@@ -116,8 +142,7 @@ rule gp_corr:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
         script = config["scripts"] + "gp_corr.py",
-        gtf_file = expand("data/{genome}.gtf",
-                          genome=config["peaks"]["genome"])
+        gtf_file = config["peaks"]["gtf_file"]
     params:
         n_jobs = config["gene_peak_corr_config"]["n_jobs"],
         test_set = config["gene_peak_corr_config"]["test_set"],
@@ -203,6 +228,10 @@ rule compute_ins_chip:
         atac = config["anndata"]["atac"],
         rna = config["anndata"]["rna"],
         sc_atac = config["anndata"]["sc_atac"],
+        # Explicit dep: peak_tf writes varm['FIMO'] / uns['FIMOColumns']
+        # into sc_atac.h5ad, which this rule reads. Without this edge,
+        # `snakemake gene_x_tf` from a clean state skips peak_tf and FIMO.
+        peak_tf_dir = expand("{dirname}peak_tf/", dirname=output_dir),
         script = config["scripts"] + "compute_ins_chip.py",
     params:
         verbose = config["ins_chip"]["verbose"],

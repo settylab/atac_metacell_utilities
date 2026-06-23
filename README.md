@@ -5,6 +5,30 @@ This repository contains a [`snakemake`](https://snakemake.readthedocs.io/en/sta
 * ChromVAR results (ref-3) using In-silico ChIP results
 * Primed and lineage specific peaks in single-cell data as described in (ref-4)
 
+## Running the gene_x_tf pipeline (Python-only path)
+
+`rule all` targets the gene-by-TF matrix only. The chain is
+
+```
+prepare_peak_file -> all_seqs (seq_gl.py) -> fasta_split -> fimo_chunk x N -> fimo (gather)
+                                                                              \
+                                                                               -> peak_tf -> compute_ins_chip ->\
+                                  gp_corr ----------------------------------------------------------------------> gene_x_tf
+```
+
+All steps are Python; FIMO comes from conda (`meme=5.5`). No R, no `renv`. To run end-to-end after editing `config/config.yaml` for your AnnData paths and genome FASTA:
+
+```bash
+# dry-run first to inspect the trimmed DAG
+snakemake -nr
+
+# real run; --cores controls how many fimo_chunk jobs run in parallel
+snakemake --cores 32
+```
+
+`fimo.scatter_n` in `config/config.yaml` (default 32) controls how many parallel FIMO jobs run; tune to match `--cores` and your cluster partition. The output is `<output>/gene_x_tf/gene_x_tf.csv` plus `varm['geneXTF']` written into the RNA single-cell AnnData.
+
+The off-chain rules (`chromvar`, `peak_scores`, `peak_selection`, `ct_open_peaks`, `diff_acc`, `prep_chromvar`, `write_ins_chip`) are still defined in the Snakefile but no longer requested by `rule all`. They were R-dependent or auxiliary; reconnect them to `rule all` if you need those outputs.
 
 ## Overview:
 

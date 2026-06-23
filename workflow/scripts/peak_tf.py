@@ -59,15 +59,18 @@ def build_peak_tf(fimo_scores, peaks_df):
     peak_index = pd.Series(range(len(peaks_df.name)), index=peaks_df.name)
 
     # Initialize Values
-    num_records = int(subprocess.run(
-        ['wc', '-l', fimo_scores], stdout=subprocess.PIPE).stdout.decode().split(' ')[0]) - 5
+    # Count non-comment, non-blank data lines; subtract 1 for the header
+    # (which starts with 'motif_id', not '#'). Robust to FIMO trailer
+    # presence/absence — blank lines fail the `^[^#]` match.
+    num_records = int(subprocess.check_output(
+        ['grep', '-c', '^[^#]', fimo_scores]).strip()) - 1
 
     x = np.zeros(num_records)
     y = np.zeros(num_records)
     values = np.zeros(num_records)
 
     # Read file
-
+            
     with open(fimo_scores, 'r') as f:
         for line in tqdm(f):
             # Skip first line
@@ -77,7 +80,12 @@ def build_peak_tf(fimo_scores, peaks_df):
 
             if len(split) == 1:
                 break
-
+            
+             # Ensure peak is in peaks_df.name
+            peak_name = split[2]
+            if peak_name not in peak_index:
+                continue
+                
             # Update motifs if necessary
             if split[1] not in motifs:
                 motifs[split[1]] = motif_index
