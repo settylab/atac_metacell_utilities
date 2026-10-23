@@ -1,32 +1,31 @@
-if __name__ == "__main__":
-    import argparse
-    desc = "Prepares peak file for downstream MOTIF analysis"
-
-    parser = argparse.ArgumentParser(
-        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--atac",
-        metavar="AnnData",
-        type=str,
-        required=True,
-        help="Path to ATAC AnnData.",
-    )
-
-    parser.add_argument(
-        "-o",
-        "--outdir",
-        type=str,
-        help="Path to output directory",
-        default="results/",
-        metavar="directory"
-    )
-    args = parser.parse_args()
+#if __name__ == "__main__":
+#    import argparse
+#    desc = "Prepares peak file for downstream MOTIF analysis"
+#
+#    parser = argparse.ArgumentParser(
+#        description=desc, formatter_class=argparse.ArgumentDefaultsHelpFormatter
+#    )
+#
+#    parser.add_argument(
+#        "--atac",
+#        metavar="AnnData",
+#        type=str,
+#        required=True,
+#        help="Path to ATAC AnnData.",
+#    )
+#
+#    parser.add_argument(
+#        "-o",
+#        "--outdir",
+#        type=str,
+#        help="Path to output directory",
+#        default="results/",
+#        metavar="directory"
+#    )
+#    args = parser.parse_args()
 
 import pandas as pd
 import scanpy as sc
-
 
 def make_peak_df(peaks_list):
 
@@ -56,14 +55,17 @@ def make_peak_df(peaks_list):
     return peaks_df
 
 
-def main(args):
+def main():
     # Load data
-    atac_ad = sc.read(args.atac)
-
+    print("Reading annData ...")
+    atac_ad = sc.read(snakemake.input['atac'])
+    print("Making peak DataFrame ...")
     peaks_df = make_peak_df(atac_ad.var_names)
-    peaks_df.to_csv(args.outdir + 'peaks.bed',
+    print("Exporting peak DataFrame ...")
+    peaks_df.to_csv(snakemake.output[0],
                     sep='\t', index=None, header=False)
+    print('Complete!')
 
 
 if __name__ == "__main__":
-    main(args)
+    main()

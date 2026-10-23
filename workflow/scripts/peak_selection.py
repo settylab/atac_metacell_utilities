@@ -2,7 +2,6 @@ import scanpy as sc
 import pandas as pd
 import numpy as np
 from tqdm.auto import tqdm
-from snakemake.script import snakemake
 
 def main():
 
@@ -98,7 +97,7 @@ def main():
     import os
     out_path = str(snakemake.output[0])
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    with open(f"{out_path}/., 'a'):
+    with open(out_path, 'a'):
         os.utime(out_path, None)
     print("Completed!")
 

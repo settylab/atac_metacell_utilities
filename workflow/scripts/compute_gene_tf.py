@@ -1,7 +1,6 @@
 import pandas as pd
 import scanpy as sc
 from scipy.sparse import csr_matrix
-from snakemake.script import snakemake
 
 def main():
     # Load data

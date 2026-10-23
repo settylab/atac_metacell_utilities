@@ -4,7 +4,6 @@ import scanpy as sc
 import pandas as pd
 import numpy as np
 import subprocess
-from snakemake.script import snakemake
 
 def build_peak_tf(fimo_scores, peaks_df):
     # Motif information
@@ -57,10 +56,12 @@ def build_peak_tf(fimo_scores, peaks_df):
 
 
 def main():
-    peaks_df = pd.read_csv(snakemake.input["peaks"], sep='\t', header=None)
+    print(snakemake.output)
+    peaks_file = str(snakemake.input["peaks"])
+    peaks_df = pd.read_csv(peaks_file, sep='\t', header=None)
     peaks_df.columns = ['chrom', 'chromStart',
                         'chromEnd', 'summit', 'score', 'name']
-    fimo_scores = snakemake.input['fimo_file']
+    fimo_scores = str(snakemake.input['fimo_file'])
 
     # Build peak x TF AnnData
     print('Building peak X TF matrix')
@@ -75,9 +76,10 @@ def main():
 
     # CReate directory to mark completion
     import os
-    os.makedirs(f"{str(snakemake.config["out_dir"])}peak_tf/", exist_ok=True)
-    with open(snakemake.output, 'a'):
-        os.utime(snakemake.output, None)
+    os.makedirs(f"{str(snakemake.config['output'])}peak_tf/", exist_ok=True)
+    out_file = str(snakemake.output)
+    with open(out_file, 'a'):
+        os.utime(out_file, None)
 
 
 if __name__ == "__main__":

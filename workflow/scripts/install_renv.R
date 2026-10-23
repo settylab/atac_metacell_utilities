@@ -1,2 +1,3 @@
-args <-commandArgs(trailingOnly=TRUE)
-install.packages("renv", lib=args[1], repos='http://cran.us.r-project.org')
+#args <-commandArgs(trailingOnly=TRUE)
+libloc <- snakemake@input[["libloc"]]
+install.packages("renv", lib=libloc, repos='http://cran.us.r-project.org')

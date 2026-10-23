@@ -7,7 +7,6 @@ import scanpy as sc
 import numba as nb
 import os
 from itertools import product
-from snakemake.script import snakemake
 
 def filter_gene(ad, gene_list):
     has_expr = [g in gene_list for g in ad.var_names]

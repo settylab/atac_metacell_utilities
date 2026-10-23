@@ -5,7 +5,7 @@ configfile: "config/D1_Config.yaml"
 output_dir = config["output"]
 peak_select = config["peak_selection"]
 targets = peak_select["targets"]
-
+modality = config['modality']
 
 def get_all_comparisons(targets_config):
     """Auto-generate pairwise comparisons needed for diff_acc from targets config."""
@@ -45,12 +45,14 @@ rule dl_hg38:
 rule renv_install:
     input:
         libloc = config['renv_loc']
-    shell:
-        """
-        Rscript workflow/scripts/install_renv.R {input.libloc}
-        """
+    conda:
+        "../envs/R-4.1.0_environment.yaml"
+    script:
+        "scripts/install_renv.R"
 
 rule renv_init_restore:
+    conda:
+     "../envs/R-4.1.0_environment.yaml"
     shell:
         """
         R -e 'renv::init(bare=TRUE)'
@@ -61,14 +63,13 @@ rule renv_init_restore:
 
 rule prepare_peak_file:
     input:
-        atac = config["anndata"]["atac"],
-        script = config["scripts"] + "prepare_peak_file.py"
-    params:
-        out_dir = output_dir
+        atac = config["anndata"]["atac"]
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
-    shell:
-        "python {input.script} --atac={input.atac} --outdir={params.out_dir}"
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/prepare_peak_file.py"
 
 rule all_seqs:
     input:
@@ -79,10 +80,11 @@ rule all_seqs:
         genome = config["peaks"]["genome"]
     output:
         expand("{dirname}all_seqs.fa", dirname=output_dir)
-    shell:
-        """
-        Rscript {input.script} {input.peaks} {output} {params.span} {params.genome}
-        """
+    conda:
+        "../envs/R-4.1.0_environment.yaml"
+    script:
+        "scripts/seq_gl.R"
+        
 rule fimo:
     input:
         meme = config["peaks"]["meme_file"],
@@ -96,6 +98,7 @@ rule fimo:
         out = config["logs"] + "fimo.out"
     shell:
         """
+        ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
         fimo -oc {params.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
         rm -f {params.fimo_dir}/cisml.xml
         """
@@ -104,10 +107,10 @@ rule peak_tf:
     input:
         peaks = expand("{dirname}peaks.bed", dirname=output_dir),
         fimo_file = ancient(expand("{dirname}fimo_result/fimo.tsv", dirname=output_dir))
-    conda:
-        "../envs/environment.yaml"
     output:
         expand("{dirname}peak_tf/.peak_tf", dirname=output_dir)
+    conda:
+        "../envs/environment.yaml"
     script:
         "scripts/peak_tf.py"
 
@@ -128,51 +131,81 @@ rule peak_tf:
 #         touch {output}
 #         """
 
-rule diff_acc:
-    input:
-        script = config["scripts"] + "diff_acc.R",
-        pyscript = config["scripts"] + "diff_acc.py",
-        metacell_script = config["scripts"] + "meta_mtx.py",
-        atac = config["anndata"]["atac"],
-        sc_atac = config["anndata"]["sc_atac"],
+rule meta_mtx:
     params:
         to_compare = to_compare_str,
+        seacell_label = config['anndata']["SEACell_label"],
+        cell_type_obs = config["diff_acc"]["cell_type_obs"],
+        out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
+    output:
+        mtx = expand("{dirname}diff_acc/meta_{modality}_X.mtx", dirname=output_dir, modality = modality),
+        cells = expand("{dirname}diff_acc/meta_{modality}_cells.csv", dirname=output_dir, modality = modality),
+        peaks = expand("{dirname}diff_acc/meta_{modality}_peaks.csv", dirname=output_dir, modality = modality),
+        metadata = expand("{dirname}diff_acc/meta_{modality}_metadata.csv", dirname=output_dir, modality = modality)
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/meta_mtx.py"
+#    shell:
+#        """
+#        mkdir -p {params.out_dir}
+#        python {input.metacell_script} --atac={input.atac} --sc_atac={input.sc_atac} --cell_type_obs={params.cell_type_obs} -o={params.out_dir}
+
+rule diff_acc_r:
+    input:
+        mtx = expand("{dirname}diff_acc/meta_{modality}_X.mtx", dirname=output_dir, modality = modality),
+        cells = expand("{dirname}diff_acc/meta_{modality}_cells.csv", dirname=output_dir, modality = modality),
+        peaks = expand("{dirname}diff_acc/meta_{modality}_peaks.csv", dirname=output_dir, modality = modality),
+        metadata = expand("{dirname}diff_acc/meta_{modality}_metadata.csv", dirname=output_dir, modality = modality),
+    params:
+        to_compare = to_compare_str,
+        modality = 'atac',
+        cell_type_obs = config["diff_acc"]["cell_type_obs"],
+        out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
+    output:
+        expand("{dirname}diff_acc/.diff_acc_r", dirname=output_dir)
+    conda:
+        "../envs/R-4.1.0_environment.yaml"
+    script:
+        "scripts/diff_acc.R"
+
+rule diff_acc:
+    input:
+        expand("{dirname}diff_acc/.diff_acc_r", dirname=output_dir)
+    params:
+        to_compare = to_compare_str,
+        modality = 'atac',
         cell_type_obs = config["diff_acc"]["cell_type_obs"],
         out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
     output:
         expand("{dirname}diff_acc/.diff_acc", dirname=output_dir)
-    shell:
-        """
-        mkdir -p {params.out_dir}
-        python {input.metacell_script} --atac={input.atac} --sc_atac={input.sc_atac} --cell_type_obs={params.cell_type_obs} -o={params.out_dir}
-        Rscript {input.script} {params.out_dir} {params.to_compare} {params.cell_type_obs}
-        python {input.pyscript} --atac={input.atac} --to_compare={params.to_compare} --data_dir={params.out_dir}
-        touch {output}
-        """
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/diff_acc.py"
+#    shell:
+#        """
+#        Rscript {input.script} {params.out_dir} {params.to_compare} {params.cell_type_obs}
+#        python {input.pyscript} --atac={input.atac} --to_compare={params.to_compare} --data_dir={params.out_dir}
+#        touch {output}
+#        """
 
 rule gp_corr:
     input:
-        atac = config["anndata"]["atac"],
-        rna = config["anndata"]["rna"],
-        script = config["scripts"] + "gp_corr.py",
         gtf_file = expand("data/{genome}.gtf",
                           genome=config["peaks"]["genome"])
     params:
         n_jobs = config["gene_peak_corr_config"]["n_jobs"],
         test_set = config["gene_peak_corr_config"]["test_set"],
         n_genes = config["gene_peak_corr_config"]["n_genes"],
-        min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
-        max_pval = config["gene_peak_corr_cutoffs"]["max_pval"]
+        transcript_span = 100000
 
     output:
         expand("{dirname}gp_corrs/.gp_corr", dirname=output_dir)
-    shell:
-        """
-        mkdir -p {output}
-        python {input.script} --atac={input.atac} --rna={input.rna} -o={output} --n_jobs={params.n_jobs} \\
-            --gtf_file={input.gtf_file} {params.test_set} --n_genes={params.n_genes} --min_corr={params.min_corr} \\
-            --max_pval={params.max_pval}
-        """
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/gp_corr.py"
 
 # ---- Cell-type open peaks --- #
 rule ct_open_peaks:
@@ -237,17 +270,22 @@ rule peak_scores:
 
 
 # ---- In Silico ChIP Rules ---- #
+# Uses anndata_write=1 to serialize writes to shared h5ad files across lineages
 rule compute_ins_chip:
     input:
         peak_tf = expand("{dirname}peak_tf/.peak_tf", dirname=output_dir)
     params:
         verbose = config["ins_chip"]["verbose"],
+        lineage_name = lambda wc: wc.lineage,
+    resources:
+        anndata_write = 1
     output:
-        expand("{dirname}ins_chip/.ins_chip", dirname=output_dir)
+        expand("{dirname}ins_chip/{{lineage}}/.ins_chip", dirname=output_dir)
     conda:
         "../envs/environment.yaml"
     script:
         "scripts/compute_ins_chip.py"
+        
 #rule write_ins_chip:
 #    input:
 #        atac = config["anndata"]["sc_atac"],
@@ -262,6 +300,7 @@ rule compute_ins_chip:
 #        """
 #        python {input.script} --atac={input.atac} --rna={input.rna}  --datadir={input.data_dir}
 #        """
+
 rule prep_chromvar:
     input:
         ins_chip_out = expand("{dirname}ins_chip/.ins_chip", dirname=output_dir),
@@ -277,30 +316,68 @@ rule prep_chromvar:
         "../envs/environment.yaml"
     script:
         "scripts/prep_chromVAR_files.py"
-
-rule chromvar:
+        
+rule run_chromvar:
     input:
-        sc_rna = config["anndata"]["sc_rna"],
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
         bin_ins_chip = expand("{dirname}chromvar_input/bin_ins_chip.mtx", dirname=output_dir),
         chromvar_tf_names = expand("{dirname}chromvar_input/chromvar_tf_names.txt", dirname=output_dir),
         sc_atac_counts = expand("{dirname}chromvar_input/sc_atac_counts.mtx", dirname=output_dir),
-        sc_nfrags= expand("{dirname}chromvar_input/sc_nfrags.csv", dirname=output_dir),
-        script = config["scripts"] + "run_chromvar.R",
-        pyscript = config["scripts"] + "run_chromvar.py"
+        sc_nfrags= expand("{dirname}chromvar_input/sc_nfrags.csv", dirname=output_dir)
     params:
         genome = config["peaks"]["genome"],
         chromvar_indir = directory(
-            expand("{dirname}chromvar_output/", dirname=output_dir))
+            expand("{dirname}chromvar_input/", dirname=output_dir))
     output:
         chromvar_outdir = directory(
             expand("{dirname}chromvar_output/", dirname=output_dir))
-    shell:
-        """
-        mkdir -p {output.chromvar_outdir}
-        Rscript {input.script} {input.peak_file} {params.chromvar_indir} {output.chromvar_outdir} {params.genome}
-        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
-        """
+    conda:
+        "../envs/R-4.1.0_environment.yaml"
+    script:
+        "scripts/run_chromvar.R"
+
+rule chromvar:
+    input:
+        sc_rna = config["anndata"]["sc_rna"],
+        chromvar_outdir = expand("{dirname}chromvar_output/", dirname=output_dir)
+    conda:
+        "../envs/environment.yaml"
+    script:
+        "scripts/run_chromvar.py"
+          
+#    shell:
+#        """
+#        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
+#        """
+        
+#rule chromvar:
+#    input:
+#        sc_rna = config["anndata"]["sc_rna"],
+#        peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
+#        ins_chip_out = expand("{dirname}ins_chip/.ins_chip", dirname=output_dir)
+#        script = config["scripts"] + "run_chromvar.R",
+#        pyscript = config["scripts"] + "run_chromvar.py"
+#    params:
+#        min_chip = config["ins_chip"]["min_chip_score"],
+#        min_peak_hits = config["ins_chip"]["min_peak_hits"],
+#        genome = config["peaks"]["genome"],
+#        chromvar_indir = directory(
+#            expand("{dirname}chromvar_input/", dirname=output_dir))
+#    output:
+#        chromvar_outdir = directory(
+#            expand("{dirname}chromvar_output/", dirname=output_dir))
+#    conda:
+#        "../envs/environment.yaml"
+#    script:
+#        "scripts/run_chromvar.py"
+#    shell:
+#        """
+#        mkdir -p {output.chromvar_outdir}
+#        Rscript {input.script} {input.peak_file} {params.chromvar_indir} {output.chromvar_outdir} {params.genome}
+#        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
+#        """
+        
+        
 
 # ---- Computation Rule ---- #
 rule gene_x_tf:
@@ -327,3 +404,4 @@ rule clean:
             shell("rm -ri {params.out_dir}")
         else:
             shell("rm -r {params.out_dir}")
+

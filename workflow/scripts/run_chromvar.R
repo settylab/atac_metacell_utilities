@@ -1,3 +1,4 @@
+source("renv/activate.R") 
 args <-commandArgs(trailingOnly=TRUE)
 
 library(chromVAR)
@@ -7,10 +8,17 @@ library(BiocParallel)
 library(SeqGL)
 
 
-peak_file <- args[1]
-chromvar_indir <- args[2]
-chromvar_outdir <- args[3]
-genome <- SeqGL:::load.bsgenome(args[4])
+peak_file <- snakemake@input[["peak_file"]] #args[1]
+chromvar_indir <- snakemake@params[["chromvar_indir"]]#args[2]
+chromvar_outdir <- snakemake@output[["chromvar_outdir"]]#args[3]
+genome <- SeqGL:::load.bsgenome(snakemake@params[["genome"]])#(args[4])
+
+
+if (!dir.exists(chromvar_outdir)){
+dir.create(chromvar_outdir)
+} else {
+    print(sprintf("%s already exists!", chromvar_outdir))
+}
 
 peaks <- getPeaks(peak_file, sort_peaks=TRUE, extra_cols=c('summit'=4, 'score'=5,'name'=6))
 count_matrix <- Matrix::readMM(sprintf("%s/sc_atac_counts.mtx", chromvar_indir))

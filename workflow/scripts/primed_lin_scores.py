@@ -2,7 +2,6 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
-from snakemake.script import snakemake
 
 def _dot_func(x, y):
     return x.dot(y)

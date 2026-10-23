@@ -1,17 +1,18 @@
-args <-commandArgs(trailingOnly=TRUE)
+#args <-commandArgs(trailingOnly=TRUE)
+source("renv/activate.R") 
 library(SeqGL)
 
-span <- as.numeric(args[3])
-org <- args[4]
+span <- snakemake@params[["span"]] # as.numeric(args[3])
+org <- snakemake@params[["genome"]] #args[4]
 
 # Peaks directory
-peaks.file <- args[1]
+peaks.file <- snakemake@input[["peaks"]] #args[1]
 
 
 # Load genome function 
 load.bsgenome <- function (genome) {
 
-  if (!genome %in% c('hg38', 'hg19', 'hg18', 'mm9', 'mm10', 'pFal')) {
+  if (!genome %in% c('hg38', 'hg19', 'hg18', 'mm9', 'mm10')) {
     stop ('The specified organism is not supported. Install the necessary Bioconductor package and update the script seq_gl.R')
   }
 
@@ -39,12 +40,6 @@ load.bsgenome <- function (genome) {
     library (BSgenome.Mmusculus.UCSC.mm10)
     org <- Mmusculus
   }
-
-  if (genome == 'pFal'){
-    library (BSgenome.Pfalciparum.PlasmoDB.plasFalc3D76)
-    org <- Pfalciparum
-  }
-
   return (org)
 }
 
@@ -63,4 +58,4 @@ seqs <- SeqGL:::get.seqs(load.bsgenome(org), all.regions)
 names(seqs) <- all.regions$name
 
 # Save 
-writeXStringSet(seqs, args[2])
+writeXStringSet(seqs, snakemake@output[[1]])

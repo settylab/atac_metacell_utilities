@@ -1,32 +1,33 @@
+source("renv/activate.R") 
 library(tidyverse)
 library(data.table)
 library(Matrix)
 library(SummarizedExperiment)
 library(edgeR)
 
-args = commandArgs(trailingOnly=TRUE)
-if (length(args) < 3){
-    stop("Please supply the directory containing the required data files, cell type variable name, and a vector of tuples of cell types to compare")
-} else {
-    data_dir <- args[1] 
-    to_compare <- args[2]  
-    group_variable <- args[3]
-}
+#args = commandArgs(trailingOnly=TRUE)
+#if (length(args) < 3){
+#    stop("Please supply the directory containing the required data files, cell type variable name, and a vector of tuples of cell types to compare")
+#} else {
+data_dir <- snakemake@params[['out_dir']]#args[1] 
+to_compare <- snakemake@params[['to_compare']]#args[2]  
+group_variable <- snakemake@params[['cell_type_obs']] #args[3]
+#}
 # Comparisons
 
 to_compare = strsplit(to_compare, as.character('/'))[[1]]
 to_compare = strsplit(to_compare, as.character(','), fixed = TRUE)
 
 
-to_compare=c(c("EryPre1", "proB"))
-data_dir="D2R1/results/diff_acc"
-group_variable="celltype_updated"
-fname <- paste(data_dir, '/meta_atac_metadata.csv',  sep = "")
-atac_metadata <- fread(paste(data_dir, '/meta_atac_metadata.csv' , sep = ""))
+#to_compare=c(c("EryPre1", "proB"))
+#data_dir="D2R1/results/diff_acc"
+#group_variable="celltype_updated"
+fname <- paste(data_dir, 'meta_ATAC_metadata.csv',  sep = "")
+atac_metadata <- fread(paste(data_dir, 'meta_ATAC_metadata.csv' , sep = ""))
 
 # Load data
-peak_names <- fread(paste(data_dir, '/meta_atac_peaks.csv',  sep = ""))
-metacell_mtx <- readMM(paste(data_dir, '/meta_atac_X.mtx', sep = ""))
+peak_names <- fread(paste(data_dir, 'meta_ATAC_peaks.csv',  sep = ""))
+metacell_mtx <- readMM(paste(data_dir, 'meta_ATAC_X.mtx', sep = ""))
 
 
 # edgeR code 
@@ -113,3 +114,5 @@ for (comparison in to_compare){
     diff_acc_edgeR(metacell_mtx, atac_metadata, group_variable, as.vector(comparison), data_dir)
 }
 
+print('Completed!')
+file.create(snakemake@output[[1]])

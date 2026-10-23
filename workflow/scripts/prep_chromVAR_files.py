@@ -3,7 +3,6 @@ import scipy.io
 from scipy.sparse import csr_matrix
 import scanpy as sc
 import os
-from snakemake.script import snakemake
 
 def filt_and_binarize(ins_chip_mat, min_chip_score, min_peak_hits):
     print(f'Filtering for TFs with insilico chip score > {min_chip_score} in at least {min_peak_hits} peaks')
@@ -39,6 +38,26 @@ def main():
     scipy.io.mmwrite(snakemake.output['sc_atac_counts'], atac_sc_ad.X)
     atac_sc_ad.obs['nFrags'].to_csv(
         snakemake.output['sc_nfrags'], index=True, header=['nFrags'])
+    
+    #out_path = snakemake.output[0]
+    #os.makedirs(out_path, exist_ok=True)
+    #with open(out_path, 'a'):
+    #    os.utime(out_path, None)
+
+    #print("Running run_chromvar.R")
+    #command = 'Rscript'
+    #path_to_script = snakemake.input['script']
+
+    # Run the script
+    # {input.script} {input.peak_file} {params.chromvar_indir} {output.chromvar_outdir} {params.genome}
+    #subprocess.check_call([command, path_to_script, snakemake.input['peak_file'], snakemake.params['chromvar_indir'], snakemake.params['chromvar_outdir'], snakemake.params['genome'], shell=False)
+    
+    #print('Loading and then saving chromVAR results to anndata..')
+    #rna_ad = sc.read_h5ad(args.sc_rna)
+    #deviations = pd.read_csv(out_path.rstrip('/') + "/deviations.csv", index_col=0).T
+    #deviations.index = rna_ad.obs_names
+    #rna_ad.obsm["chromVAR_deviations"] = deviations
+    #rna_ad.write(args.sc_rna)
 
 
 if __name__ == "__main__":
