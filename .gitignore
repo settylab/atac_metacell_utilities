@@ -2,7 +2,7 @@
 .snakemake
 ._dag.png
 .DS_Store
-*results/
+*results*/
 *logs/
 data/
 **/__pycache__/
@@ -19,3 +19,4 @@ config/D*
 envs/.Rprofile
 python-3.8_env.yaml
 renv_1/
+*lock/
