@@ -113,6 +113,19 @@ def main():
             gp_corr_df = pd.concat([gp_corr_df, gp_corr[gene]])
     atac_ad.uns["gp_corrs"] = gp_corr_df
 
+    # Copy .var fields from single-cell ATAC to metacell ATAC AnnData.
+    # Fields like nearestGene (from ArchR) are present in the single-cell
+    # data but lost during SEACells metacell summarization.
+    print('Syncing .var fields from single-cell ATAC AnnData...')
+    sc_atac_ad = sc.read(snakemake.config["anndata"]["sc_atac"])
+    missing_cols = sc_atac_ad.var.columns.difference(atac_ad.var.columns)
+    if len(missing_cols) > 0:
+        for col in missing_cols:
+            atac_ad.var[col] = sc_atac_ad.var[col].reindex(atac_ad.var_names).values
+        print(f'  Copied {len(missing_cols)} fields: {list(missing_cols)}')
+    else:
+        print('  No missing fields to copy')
+
     # Write anndata file
     print('Saving anndata file ...')
     atac_ad.write(snakemake.config["anndata"]["atac"])
