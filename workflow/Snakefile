@@ -34,7 +34,8 @@ rule all:
         score = expand(
             "{dirname}peak_scores/{lineage}/.peak_scores",
             dirname=output_dir, lineage=targets.keys()),
-        gene_x_tf = expand("{dirname}gene_x_tf/.gene_x_tf", dirname=output_dir)
+        gene_x_tf = expand("{dirname}gene_x_tf/{lineage}/.gene_x_tf",
+            dirname=output_dir, lineage=targets.keys())
 # ---- Genome Download Rule ---- #
 
 rule dl_hg38:
@@ -63,7 +64,7 @@ rule renv_init_restore:
 
 rule prepare_peak_file:
     input:
-        atac = config["anndata"]["atac"]
+        atac = ancient(config["anndata"]["atac"])
     output:
         expand("{dirname}peaks.bed", dirname=output_dir)
     conda:
@@ -267,13 +268,22 @@ rule peak_scores:
         "../envs/environment.yaml"
     script:
         "scripts/primed_lin_scores.py"
+        
+# Standalone target: run peak_selection for all lineages without triggering
+# compute_ins_chip or downstream rules. Invoke with: snakemake run_peak_selection
+rule run_peak_selection:
+    input:
+        expand("{dirname}peak_selection/{lineage}/.peak_selection",
+            dirname=output_dir, lineage=targets.keys())
 
 
 # ---- In Silico ChIP Rules ---- #
 # Uses anndata_write=1 to serialize writes to shared h5ad files across lineages
 rule compute_ins_chip:
     input:
-        peak_tf = expand("{dirname}peak_tf/.peak_tf", dirname=output_dir)
+        peak_tf = expand("{dirname}peak_tf/.peak_tf", dirname=output_dir),
+        peak_selection = expand(
+            "{dirname}peak_selection/{{lineage}}/.peak_selection", dirname=output_dir)
     params:
         verbose = config["ins_chip"]["verbose"],
         lineage_name = lambda wc: wc.lineage,
@@ -303,15 +313,16 @@ rule compute_ins_chip:
 
 rule prep_chromvar:
     input:
-        ins_chip_out = expand("{dirname}ins_chip/.ins_chip", dirname=output_dir),
+        ins_chip_out = expand("{dirname}ins_chip/{{lineage}}/.ins_chip", dirname=output_dir),
     params:
+        lineage_name = lambda wc: wc.lineage,
         min_chip = config["ins_chip"]["min_chip_score"],
         min_peak_hits = config["ins_chip"]["min_peak_hits"]
     output:
-        bin_ins_chip = expand("{dirname}chromvar_input/bin_ins_chip.mtx", dirname=output_dir),
-        chromvar_tf_names = expand("{dirname}chromvar_input/chromvar_tf_names.txt", dirname=output_dir),
-        sc_atac_counts = expand("{dirname}chromvar_input/sc_atac_counts.mtx", dirname=output_dir),
-        sc_nfrags= expand("{dirname}chromvar_input/sc_nfrags.csv", dirname=output_dir)
+        bin_ins_chip = expand("{dirname}chromvar_input/{{lineage}}/bin_ins_chip.mtx", dirname=output_dir),
+        chromvar_tf_names = expand("{dirname}chromvar_input/{{lineage}}/chromvar_tf_names.txt", dirname=output_dir),
+        sc_atac_counts = expand("{dirname}chromvar_input/{{lineage}}/sc_atac_counts.mtx", dirname=output_dir),
+        sc_nfrags = expand("{dirname}chromvar_input/{{lineage}}/sc_nfrags.csv", dirname=output_dir)
     conda:
         "../envs/environment.yaml"
     script:
@@ -320,14 +331,14 @@ rule prep_chromvar:
 rule run_chromvar:
     input:
         peak_file = expand("{dirname}peaks.bed", dirname=output_dir),
-        bin_ins_chip = expand("{dirname}chromvar_input/bin_ins_chip.mtx", dirname=output_dir),
-        chromvar_tf_names = expand("{dirname}chromvar_input/chromvar_tf_names.txt", dirname=output_dir),
-        sc_atac_counts = expand("{dirname}chromvar_input/sc_atac_counts.mtx", dirname=output_dir),
-        sc_nfrags= expand("{dirname}chromvar_input/sc_nfrags.csv", dirname=output_dir)
+        # Barrier: wait for all per-lineage prep_chromvar outputs
+        _chromvar_barrier = expand("{dirname}chromvar_input/{lineage}/bin_ins_chip.mtx",
+                                  dirname=output_dir, lineage=targets.keys()),
     params:
         genome = config["peaks"]["genome"],
-        chromvar_indir = directory(
-            expand("{dirname}chromvar_input/", dirname=output_dir))
+        # Use first lineage's chromvar_input dir (InSilicoChip is identical across lineages)
+        chromvar_indir = expand("{dirname}chromvar_input/{first_lineage}/",
+                               dirname=output_dir, first_lineage=list(targets.keys())[0])
     output:
         chromvar_outdir = directory(
             expand("{dirname}chromvar_output/", dirname=output_dir))
@@ -344,7 +355,7 @@ rule chromvar:
         "../envs/environment.yaml"
     script:
         "scripts/run_chromvar.py"
-          
+
 #    shell:
 #        """
 #        python {input.pyscript} --sc_rna {input.sc_rna} --input {output.chromvar_outdir}
@@ -380,21 +391,26 @@ rule chromvar:
         
 
 # ---- Computation Rule ---- #
+# Uses anndata_write=1 to serialize writes to shared h5ad files across lineages
 rule gene_x_tf:
     input:
-        ins_chip = expand("{dirname}ins_chip/.ins_chip", dirname=output_dir),
+        ins_chip = expand("{dirname}ins_chip/{{lineage}}/.ins_chip", dirname=output_dir),
         gp_dir = expand("{dirname}gp_corrs/.gp_corr", dirname=output_dir),
     params:
+        lineage_name = lambda wc: wc.lineage,
         min_corr = config["gene_peak_corr_cutoffs"]["min_corr"],
         max_pval = config["gene_peak_corr_cutoffs"]["max_pval"],
         min_peaks = config["gene_peak_corr_cutoffs"]["min_peaks"]
+    resources:
+        anndata_write = 1
     output:
-       expand("{dirname}gene_x_tf/.gene_x_tf", dirname=output_dir)
+        expand("{dirname}gene_x_tf/{{lineage}}/.gene_x_tf", dirname=output_dir)
     conda:
         "../envs/environment.yaml"
     script:
         "scripts/compute_gene_tf.py"
-
+        
+        
 # ---- Cleaning Rule ---- #
 rule clean:
     params:

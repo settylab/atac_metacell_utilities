@@ -103,8 +103,8 @@ def main():
 
 
 # Create file if it doesn't exist by opening in append mode
-with open(fname, 'a'):
+#with open(fname, 'a'):
     # Update access and modification times to 'now'
-    os.utime(fname, None)
+#    os.utime(fname, None)
 if __name__ == "__main__":
     main()
