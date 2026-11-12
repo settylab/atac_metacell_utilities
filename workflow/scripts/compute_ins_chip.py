@@ -158,7 +158,7 @@ def main():
     print(near_target_genes.values)
     print(near_target_genes.shape)
     for col in rna_sc_ad.obs.select_dtypes(exclude=["number","bool","object_"]).columns:
-        print(rna_sc_ad.obs[col].dtype)
+        #print(rna_sc_ad.obs[col].dtype)
         rna_sc_ad.obs[col] = rna_sc_ad.obs[col].astype(str).astype("category")
     rna_sc_ad.varm['TF_targets'] = near_target_genes.astype(int).values
     rna_sc_ad.uns['TF_targets_columns'] = list(target_genes.astype(str))
@@ -166,8 +166,9 @@ def main():
 
     ## Create directory to signify completion
     os.makedirs(f"{str(snakemake.config['output'])}ins_chip/", exist_ok=True)
-    with open(snakemake.output, 'a'):
-        os.utime(snakemake.output, None)
+    outpath = str(snakemake.output)
+    with open(outpath, 'a'):
+        os.utime(outpath, None)
     print('Completed!')
 
 
