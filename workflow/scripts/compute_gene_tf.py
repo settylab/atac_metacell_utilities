@@ -53,8 +53,9 @@ def main():
     # CReate directory to mark completion
     import os
     os.makedirs(f"{str(snakemake.config['output'])}/gene_x_tf", exist_ok=True)
-    with open(snakemake.output, 'a'):
-        os.utime(snakemake.output, None)
+    outpath = str(snakemake.output)
+    with open(outpath, 'a'):
+        os.utime(outpath, None)
 
 if __name__ == "__main__":
     main()

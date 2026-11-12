@@ -47,10 +47,11 @@ Before creating the environment, make sure the following dependencies are instal
 1. `conda`
     * Conda is required for managing environments, whether you chose to create the environment using conda or pip.
 2. `R 4.1.0`
-    * This is the version of R used throughout the pipeline. If you wish to use a different R version / installation, modify the `renv.lock` file and the R version in `config.yaml`
+    * This is the version of R used throughout the pipeline and an environment file is included with this repository (`/envs/R-4.1.0_environment.yaml`). If you wish to use a different R version / installation, modify the `renv.lock` file, `Snakefile`, and the R version in `config.yaml`
 3. `MEME (recommended: 5.1.1)`
-    * This includes the `fimo` tool used to find TF motifs. If you wish to use your own installation of the MEME Suite, update the MEME version in `config.yaml`
+    * This includes the `fimo` tool used to find TF motifs. If you wish to use your own installation of the MEME Suite, update the MEME version in `config.yaml` A conda environment (`/envs/meme.yaml` is included with this project.)
 
+By default, this workflow's profile is configured with the `--use-conda=True` and all dependencies are managed in separate conda envs.
 
 ### Python Modules
 

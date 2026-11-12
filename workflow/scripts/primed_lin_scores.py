@@ -2,13 +2,24 @@ import scanpy as sc
 import numpy as np
 import pandas as pd
 from tqdm.auto import tqdm
+from sklearn.feature_extraction.text import TfidfTransformer
+from palantir.utils import diffusion_maps_from_kernel
 
 def _dot_func(x, y):
     return x.dot(y)
 
-def impute_data_with_weights(ad, data):
-    res = _dot_func(ad.obsp['ImputeWeights'], data)
+def impute_data_with_weights(ad, data, weights_key = 'ImputeWeights'):
+    res = _dot_func(ad.obsp[weights_key], data)
     return pd.DataFrame(res, index=ad.obs_names, columns=ad.var_names)
+
+def imputation_weights(adata, 
+                       dm_res,
+                       key_added = 'ImputeWeights',
+                       n_steps=3):
+    T_steps = dm_res["T"] ** n_steps
+    T_steps = T_steps.astype(np.float32)
+
+    adata.obsp[key_added] = T_steps
 
 
 def main():
@@ -16,7 +27,7 @@ def main():
     # Load params
     print('Load data...')
     atac_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_atac"])
-    atac_meta_ad = sc.read_h5ad(snakemake.config['anndata']["meta_atac"])
+    atac_meta_ad = sc.read_h5ad(snakemake.config['anndata']["atac"])
     rna_sc_ad = sc.read_h5ad(snakemake.config['anndata']["sc_rna"])
     target_lineage = snakemake.params["lineage_name"]
     min_corr = snakemake.params["min_corr"]
@@ -32,6 +43,10 @@ def main():
         (atac_sc_ad.var[f'{target_lineage}_primed']) |
         (atac_sc_ad.var[f'{target_lineage}_lineage_specific'])
     ]
+    if 'tf_idf' not in atac_sc_ad.layers.keys():
+        tf_idf = TfidfTransformer(norm = None)
+        atac_sc_ad.layers['tf_idf'] = tf_idf.fit_transform(atac_sc_ad.X)
+        
     imputed_peak_matrix = impute_data_with_weights(atac_sc_ad[:, lin_peaks],
                                                    pd.DataFrame(atac_sc_ad[:, lin_peaks].layers['tf_idf'].todense(),
                                                                 columns=lin_peaks, index=atac_sc_ad.obs_names))
