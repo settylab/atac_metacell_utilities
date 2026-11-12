@@ -20,7 +20,7 @@ def get_all_comparisons(targets_config):
 
 
 all_comparisons = get_all_comparisons(targets)
-to_compare_str = "/".join(f"{a},{b}" for a, b in all_comparisons)
+to_compare_str = "/".join(f"{a},{b}" for a, b in sorted(all_comparisons))
 extra = config["diff_acc"]["extra_comparisons"]
 if extra:
     to_compare_str = to_compare_str + "/" + extra
@@ -91,15 +91,16 @@ rule fimo:
         meme = config["peaks"]["meme_file"],
         seqs = expand("{dirname}all_seqs.fa", dirname=output_dir)
     output:
-        expand("{dirname}fimo_result/fimo.tsv", dirname=output_dir)
+        ancient(expand("{dirname}fimo_result/fimo.tsv", dirname=output_dir))
     params:
         fimo_dir = directory(
                 expand("{dirname}fimo_result/", dirname=output_dir))
+    conda:
+        "../envs/meme.yaml"
     log:
         out = config["logs"] + "fimo.out"
     shell:
         """
-        ml MEME/5.1.1-foss-2019b-Perl-5.30.0-Python-3.7.4
         fimo -oc {params.fimo_dir} {input.meme} {input.seqs} 2> {log.out}
         rm -f {params.fimo_dir}/cisml.xml
         """
@@ -134,7 +135,6 @@ rule peak_tf:
 
 rule meta_mtx:
     params:
-        to_compare = to_compare_str,
         seacell_label = config['anndata']["SEACell_label"],
         cell_type_obs = config["diff_acc"]["cell_type_obs"],
         out_dir = expand("{dirname}diff_acc/", dirname=output_dir)
@@ -210,8 +210,6 @@ rule gp_corr:
 
 # ---- Cell-type open peaks --- #
 rule ct_open_peaks:
-    input:
-        sc_atac = config["anndata"]["sc_atac"],
     params:
         cell_type_obs = config["diff_acc"]["cell_type_obs"]
     output:
@@ -228,9 +226,7 @@ rule peak_selection:
     input:
         gp = expand("{dirname}gp_corrs/.gp_corr", dirname=output_dir),
         da = expand("{dirname}diff_acc/.diff_acc", dirname=output_dir),
-        op = expand("{dirname}ct_open_peaks/.ct_open_peaks", dirname=output_dir),
-        sc_atac = config["anndata"]["sc_atac"],
-        meta_atac = config["anndata"]["atac"],
+        op = expand("{dirname}ct_open_peaks/.ct_open_peaks", dirname=output_dir)
     params:
         lineage_name = lambda wc: wc.lineage,
         target_celltype = lambda wc: targets[wc.lineage]["target_celltype"],

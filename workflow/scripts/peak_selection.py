@@ -7,8 +7,8 @@ def main():
 
     # Load data
     print('Loading anndata...')
-    atac_ad = sc.read(snakemake.input["sc_atac"])
-    atac_meta_ad = sc.read(snakemake.input["meta_atac"])
+    atac_ad = sc.read(snakemake.config["anndata"]["sc_atac"])
+    atac_meta_ad = sc.read(snakemake.config["anndata"]["atac"])
 
     # set target lineage and cell type
     target_lineage = snakemake.params["lineage_name"]

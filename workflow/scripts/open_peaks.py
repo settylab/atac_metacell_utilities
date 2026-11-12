@@ -7,7 +7,7 @@ def main():
 
     # Load data
     print('Loading data...')
-    atac_sc_ad = sc.read(snakemake.input["sc_atac"])
+    atac_sc_ad = sc.read(snakemake.config["anndata"]["sc_atac"])
     group_variable = snakemake.params['cell_type_obs']
 
     # Open peaks per cell type
